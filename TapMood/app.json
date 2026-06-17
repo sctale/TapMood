@@ -47,7 +47,8 @@
             }
           ]
         }
-      ]
+      ],
+      "./plugins/withAndroidWidget"
     ]
   }
 }
