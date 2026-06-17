@@ -1,6 +1,6 @@
-import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
-import Svg, { Circle, G } from 'react-native-svg';
+import React, { useEffect, useRef } from 'react';
+import { View, Text, StyleSheet, Animated, Easing } from 'react-native';
+import Svg, { Circle, G, Text as SvgText } from 'react-native-svg';
 import type { MoodStats } from '../types';
 import { MOOD_CONFIG, MOOD_LEVELS, COLORS, SPACING, FONT_SIZE } from '../constants';
 
@@ -14,6 +14,19 @@ export default function MoodPieChart({ stats, size = 180 }: MoodPieChartProps) {
   const strokeWidth = 16;
   const center = size / 2;
   const circumference = 2 * Math.PI * radius;
+
+  // 淡入动画
+  const animValue = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    animValue.setValue(0);
+    Animated.timing(animValue, {
+      toValue: 1,
+      duration: 500,
+      easing: Easing.out(Easing.ease),
+      useNativeDriver: true,
+    }).start();
+  }, [stats]);
 
   // 计算各段弧长
   const total = stats.total || 1; // 避免除零
@@ -43,28 +56,35 @@ export default function MoodPieChart({ stats, size = 180 }: MoodPieChartProps) {
           <Text style={styles.emptyText}>暂无数据</Text>
         </View>
       ) : (
-        <Svg width={size} height={size}>
-          {arcs.map((arc, i) => (
-            <G key={i} rotation={arc.rotation} origin={`${center}, ${center}`}>
-              <Circle
-                cx={center}
-                cy={center}
-                r={radius}
-                fill="none"
-                stroke={arc.color}
-                strokeWidth={strokeWidth}
-                strokeDasharray={arc.strokeDasharray}
-                strokeLinecap="round"
-              />
-            </G>
-          ))}
-          {/* 中心文字 */}
-          <Text
-            style={[styles.centerText, { left: center, top: center }]}
-          >
-            {stats.total}
-          </Text>
-        </Svg>
+        <Animated.View style={{ opacity: animValue }}>
+          <Svg width={size} height={size}>
+            {arcs.map((arc, i) => (
+              <G key={i} rotation={arc.rotation} origin={`${center}, ${center}`}>
+                <Circle
+                  cx={center}
+                  cy={center}
+                  r={radius}
+                  fill="none"
+                  stroke={arc.color}
+                  strokeWidth={strokeWidth}
+                  strokeDasharray={arc.strokeDasharray}
+                  strokeLinecap="round"
+                />
+              </G>
+            ))}
+            {/* 中心文字 - 使用SvgText精确定位 */}
+            <SvgText
+              x={center}
+              y={center + 6}
+              textAnchor="middle"
+              fontSize={FONT_SIZE.xl}
+              fontWeight="bold"
+              fill={COLORS.text}
+            >
+              {stats.total}
+            </SvgText>
+          </Svg>
+        </Animated.View>
       )}
 
       {/* 图例 */}
@@ -97,14 +117,6 @@ const styles = StyleSheet.create({
   emptyText: {
     fontSize: FONT_SIZE.md,
     color: COLORS.textSecondary,
-  },
-  centerText: {
-    position: 'absolute',
-    fontSize: FONT_SIZE.xl,
-    fontWeight: 'bold',
-    color: COLORS.text,
-    textAlign: 'center',
-    transform: [{ translateX: -15 }, { translateY: -12 }],
   },
   legend: {
     marginTop: SPACING.md,

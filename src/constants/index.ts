@@ -56,6 +56,16 @@ export const SPACING = {
   xxxl: 64,
 };
 
+// 圆角规范（统一设计token）
+export const RADIUS = {
+  sm: 8,    // 小按钮、标签
+  md: 12,   // 中等卡片、输入框
+  lg: 16,   // 标准卡片
+  xl: 20,   // 大卡片、section
+  xxl: 24,  // Modal、特殊卡片
+  pill: 999, // 胶囊形
+};
+
 // 字体大小
 export const FONT_SIZE = {
   xs: 11,
