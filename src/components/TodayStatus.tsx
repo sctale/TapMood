@@ -8,12 +8,25 @@ interface TodayStatusProps {
   streak?: number;
 }
 
+// 根据当前时间生成个性化问候语
+function getGreeting(): string {
+  const hour = new Date().getHours();
+  if (hour < 6) return '夜深了，照顾好自己';
+  if (hour < 11) return '早上好，新的一天';
+  if (hour < 14) return '中午好，记得休息';
+  if (hour < 18) return '下午好，继续加油';
+  if (hour < 22) return '晚上好，辛苦了';
+  return '夜深了，早点休息';
+}
+
 export default function TodayStatus({ mood, streak = 0 }: TodayStatusProps) {
+  const greeting = getGreeting();
+
   if (!mood) {
     return (
       <View style={styles.container}>
-        <Text style={styles.greeting}>今天感觉怎么样？</Text>
-        <Text style={styles.subGreeting}>点选下方记录此刻心情</Text>
+        <Text style={styles.greeting}>{greeting}</Text>
+        <Text style={styles.subGreeting}>今天感觉怎么样？</Text>
         {streak > 0 && (
           <View style={styles.streakBadge}>
             <Text style={styles.streakText}>🔥 连续 {streak} 天</Text>
@@ -27,11 +40,12 @@ export default function TodayStatus({ mood, streak = 0 }: TodayStatusProps) {
 
   return (
     <View style={styles.container}>
+      <Text style={styles.greeting}>{greeting}</Text>
       <Text style={styles.emoji}>{config.emoji}</Text>
       <Text style={[styles.statusText, { color: config.color }]}>
         今天心情：{config.label}
       </Text>
-      <Text style={styles.hint}>点击可修改</Text>
+      <Text style={styles.hint}>点击下方可修改</Text>
       {streak > 0 && (
         <View style={styles.streakBadge}>
           <Text style={styles.streakText}>🔥 连续 {streak} 天</Text>
@@ -47,19 +61,22 @@ const styles = StyleSheet.create({
     paddingVertical: SPACING.lg,
   },
   greeting: {
+    fontSize: FONT_SIZE.md,
+    color: COLORS.textSecondary,
+    fontWeight: '400',
+    letterSpacing: 0.5,
+    marginBottom: SPACING.xs,
+  },
+  subGreeting: {
     fontSize: FONT_SIZE.xxl,
     color: COLORS.text,
     fontWeight: '300',
     letterSpacing: 1,
   },
-  subGreeting: {
-    fontSize: FONT_SIZE.sm,
-    color: COLORS.textSecondary,
-    marginTop: SPACING.xs,
-  },
   emoji: {
     fontSize: 52,
     marginBottom: SPACING.sm,
+    marginTop: SPACING.xs,
   },
   statusText: {
     fontSize: FONT_SIZE.lg,

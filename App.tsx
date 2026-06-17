@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { StatusBar } from 'expo-status-bar';
-import { SafeAreaView, StyleSheet, Linking, Alert } from 'react-native';
+import { StyleSheet, Linking, Alert } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { COLORS } from './src/constants';
 import type { MoodLevel } from './src/types';
 import TabBar from './src/components/TabBar';
@@ -81,7 +82,7 @@ export default function App() {
   const handleTabPress = (tab: TabKey) => setActiveTab(tab);
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       <StatusBar style="dark" />
       {renderScreen()}
       <TabBar activeTab={activeTab} onTabPress={handleTabPress} />

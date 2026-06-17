@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import type { MoodRecord } from '../types';
 import { MOOD_CONFIG, COLORS, SPACING, FONT_SIZE } from '../constants';
 import { getDaysInMonth, getFirstDayOfMonth, formatDate } from '../utils/dateUtils';
@@ -8,6 +8,7 @@ interface MonthViewProps {
   year: number;
   month: number; // 1-12
   records: MoodRecord[];
+  onDatePress?: (date: string) => void;
 }
 
 function buildRecordMap(records: MoodRecord[]): Map<string, MoodRecord> {
@@ -16,7 +17,7 @@ function buildRecordMap(records: MoodRecord[]): Map<string, MoodRecord> {
   return map;
 }
 
-export default function MonthView({ year, month, records }: MonthViewProps) {
+export default function MonthView({ year, month, records, onDatePress }: MonthViewProps) {
   const recordMap = buildRecordMap(records);
   const daysInMonth = getDaysInMonth(year, month);
   const firstDay = getFirstDayOfMonth(year, month);
@@ -57,7 +58,13 @@ export default function MonthView({ year, month, records }: MonthViewProps) {
             const isFuture = new Date(year, month - 1, day) > new Date();
 
             return (
-              <View key={ci} style={styles.dayCell}>
+              <TouchableOpacity
+                key={ci}
+                style={styles.dayCell}
+                onPress={() => onDatePress?.(dateStr)}
+                activeOpacity={0.6}
+                disabled={!onDatePress}
+              >
                 <View style={[
                   styles.moodCircle,
                   record && { backgroundColor: MOOD_CONFIG[record.mood].color },
@@ -73,7 +80,7 @@ export default function MonthView({ year, month, records }: MonthViewProps) {
                     {day}
                   </Text>
                 </View>
-              </View>
+              </TouchableOpacity>
             );
           })}
         </View>

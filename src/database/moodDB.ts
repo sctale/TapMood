@@ -34,22 +34,32 @@ export async function initDatabase(): Promise<void> {
 
 // 记录或更新心情（同一天重复记录则覆盖）
 export async function recordMood(mood: MoodLevel): Promise<MoodRecord> {
+  return recordMoodForDate(getToday(), mood);
+}
+
+// 记录或更新指定日期的心情（用于补记历史）
+export async function recordMoodForDate(date: string, mood: MoodLevel): Promise<MoodRecord> {
   const database = await getDB();
-  const today = getToday();
   const now = new Date().toISOString();
 
   const result = await database.runAsync(
     `INSERT INTO mood_records (date, mood, created_at) VALUES (?, ?, ?)
      ON CONFLICT(date) DO UPDATE SET mood = ?, created_at = ?`,
-    [today, mood, now, mood, now]
+    [date, mood, now, mood, now]
   );
 
   return {
     id: result.lastInsertRowId,
-    date: today,
+    date,
     mood,
     created_at: now,
   };
+}
+
+// 删除指定日期的心情记录
+export async function deleteMoodByDate(date: string): Promise<void> {
+  const database = await getDB();
+  await database.runAsync('DELETE FROM mood_records WHERE date = ?', [date]);
 }
 
 // 获取指定日期的心情记录
@@ -119,6 +129,43 @@ export async function getStreak(): Promise<number> {
     }
   }
   return streak;
+}
+
+// 获取历史最长连续打卡天数
+export async function getLongestStreak(): Promise<number> {
+  const database = await getDB();
+  const records = await database.getAllAsync<{ date: string }>(
+    'SELECT date FROM mood_records ORDER BY date ASC'
+  );
+  if (records.length === 0) return 0;
+
+  let longest = 1;
+  let current = 1;
+
+  for (let i = 1; i < records.length; i++) {
+    const [py, pm, pd] = records[i - 1].date.split('-').map(Number);
+    const [cy, cm, cd] = records[i].date.split('-').map(Number);
+    const prevDate = new Date(py, pm - 1, pd);
+    const currDate = new Date(cy, cm - 1, cd);
+    const diffDays = Math.round((currDate.getTime() - prevDate.getTime()) / 86400000);
+
+    if (diffDays === 1) {
+      current++;
+      longest = Math.max(longest, current);
+    } else {
+      current = 1;
+    }
+  }
+  return longest;
+}
+
+// 获取总记录天数
+export async function getTotalRecordCount(): Promise<number> {
+  const database = await getDB();
+  const result = await database.getFirstAsync<{ count: number }>(
+    'SELECT COUNT(*) as count FROM mood_records'
+  );
+  return result?.count ?? 0;
 }
 
 // 读取通知设置

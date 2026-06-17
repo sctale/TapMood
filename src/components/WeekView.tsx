@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import type { MoodRecord } from '../types';
 import { MOOD_CONFIG, COLORS, SPACING, FONT_SIZE } from '../constants';
 import { getWeekdayName, addDays, formatDate } from '../utils/dateUtils';
@@ -7,6 +7,7 @@ import { getWeekdayName, addDays, formatDate } from '../utils/dateUtils';
 interface WeekViewProps {
   currentDate: Date;
   records: MoodRecord[];
+  onDatePress?: (date: string) => void;
 }
 
 // 将记录转为按日期索引的Map
@@ -16,7 +17,7 @@ function buildRecordMap(records: MoodRecord[]): Map<string, MoodRecord> {
   return map;
 }
 
-export default function WeekView({ currentDate, records }: WeekViewProps) {
+export default function WeekView({ currentDate, records, onDatePress }: WeekViewProps) {
   const recordMap = buildRecordMap(records);
 
   // 计算本周7天
@@ -50,13 +51,19 @@ export default function WeekView({ currentDate, records }: WeekViewProps) {
           const isToday = dateStr === formatDate(new Date());
 
           return (
-            <View key={i} style={styles.dayCell}>
+            <TouchableOpacity
+              key={i}
+              style={styles.dayCell}
+              onPress={() => onDatePress?.(dateStr)}
+              activeOpacity={0.6}
+              disabled={!onDatePress}
+            >
               <View style={[styles.moodBlock, { backgroundColor: moodColor }]}>
                 <Text style={[styles.dayNumber, isToday && styles.todayText]}>
                   {d.getDate()}
                 </Text>
               </View>
-            </View>
+            </TouchableOpacity>
           );
         })}
       </View>

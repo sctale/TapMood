@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useEffect, useMemo } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, RefreshControl } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import type { MoodLevel, CalendarView } from '../types';
 import { COLORS, SPACING, FONT_SIZE } from '../constants';
@@ -11,14 +11,19 @@ import TodayStatus from '../components/TodayStatus';
 import WeekView from '../components/WeekView';
 import MonthView from '../components/MonthView';
 import YearView from '../components/YearView';
+import DateMoodModal from '../components/DateMoodModal';
+import Toast, { type ToastType } from '../components/Toast';
 
 export default function HomeScreen() {
   const [dbReady, setDbReady] = useState(false);
   const [calendarView, setCalendarView] = useState<CalendarView>('month');
   const [viewDate, setViewDate] = useState(new Date());
   const [streak, setStreak] = useState(0);
+  const [modalDate, setModalDate] = useState<string | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
+  const [toast, setToast] = useState({ visible: false, message: '', type: 'success' as ToastType });
 
-  const { mood: todayMood, recordMood } = useTodayMood();
+  const { mood: todayMood, recordMood, refresh: refreshToday } = useTodayMood();
 
   const getDateRange = useCallback(() => {
     switch (calendarView) {
@@ -40,13 +45,41 @@ export default function HomeScreen() {
     })();
   }, []);
 
+  // 显示Toast提示
+  const showToast = useCallback((message: string, type: ToastType = 'success') => {
+    setToast({ visible: true, message, type });
+  }, []);
+
+  const hideToast = useCallback(() => {
+    setToast((prev) => ({ ...prev, visible: false }));
+  }, []);
+
   const handleMoodSelect = useCallback(async (level: MoodLevel) => {
-    await recordMood(level);
+    try {
+      await recordMood(level);
+      refreshRecords();
+      refreshToday();
+      const s = await getStreak();
+      setStreak(s);
+      showToast('已记录今日心情');
+    } catch (e) {
+      showToast('记录失败，请重试', 'error');
+    }
+  }, [recordMood, refreshRecords, refreshToday, showToast]);
+
+  // 点击日历日期，弹出补记Modal
+  const handleDatePress = useCallback((date: string) => {
+    setModalDate(date);
+  }, []);
+
+  // Modal中记录成功后刷新
+  const handleModalRecorded = useCallback(async () => {
     refreshRecords();
-    // 刷新连续打卡天数
+    refreshToday();
     const s = await getStreak();
     setStreak(s);
-  }, [recordMood, refreshRecords]);
+    showToast('已保存');
+  }, [refreshRecords, refreshToday, showToast]);
 
   const navigateDate = useCallback((direction: -1 | 1) => {
     setViewDate((prev) => {
@@ -64,20 +97,31 @@ export default function HomeScreen() {
 
   const handleViewChange = useCallback((view: CalendarView) => {
     setCalendarView(view);
-    setViewDate(new Date());
   }, []);
 
-  // 计算月度完成率：只在月视图且查看的是本月时才计算
+  // 下拉刷新
+  const handleRefresh = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      await Promise.all([refreshRecords(), refreshToday()]);
+      const s = await getStreak();
+      setStreak(s);
+    } catch {
+      // 刷新失败静默
+    } finally {
+      setRefreshing(false);
+    }
+  }, [refreshRecords, refreshToday]);
+
+  // 计算月度完成率
   const monthProgress = useMemo(() => {
     const now = new Date();
     const isCurrentMonth = viewDate.getFullYear() === now.getFullYear()
       && viewDate.getMonth() === now.getMonth();
     if (!isCurrentMonth) {
-      // 非本月：显示该月已记录天数 / 该月总天数
       const totalDays = getDaysInMonth(viewDate.getFullYear(), viewDate.getMonth() + 1);
       return { recorded: records.length, total: totalDays, percent: totalDays > 0 ? Math.round((records.length / totalDays) * 100) : 0 };
     }
-    // 本月：已记录天数 / 今天日期
     const today = now.getDate();
     return { recorded: records.length, total: today, percent: today > 0 ? Math.round((records.length / today) * 100) : 0 };
   }, [records, viewDate]);
@@ -85,7 +129,10 @@ export default function HomeScreen() {
   if (!dbReady) {
     return (
       <View style={styles.loadingContainer}>
-        <Text style={styles.loadingText}>加载中...</Text>
+        <View style={styles.loadingCard}>
+          <View style={styles.loadingEmoji}>🌿</View>
+          <Text style={styles.loadingText}>正在准备你的心情空间...</Text>
+        </View>
       </View>
     );
   }
@@ -106,6 +153,14 @@ export default function HomeScreen() {
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={handleRefresh}
+            tintColor={COLORS.textSecondary}
+            colors={[COLORS.textSecondary]}
+          />
+        }
       >
         {/* 今日心情区域 */}
         <View style={styles.section}>
@@ -157,13 +212,32 @@ export default function HomeScreen() {
             </TouchableOpacity>
           </View>
 
-          {calendarView === 'week' && <WeekView currentDate={viewDate} records={records} />}
+          {calendarView === 'week' && <WeekView currentDate={viewDate} records={records} onDatePress={handleDatePress} />}
           {calendarView === 'month' && (
-            <MonthView year={viewDate.getFullYear()} month={viewDate.getMonth() + 1} records={records} />
+            <MonthView year={viewDate.getFullYear()} month={viewDate.getMonth() + 1} records={records} onDatePress={handleDatePress} />
           )}
           {calendarView === 'year' && <YearView year={viewDate.getFullYear()} records={records} />}
+
+          {/* 日历操作提示 */}
+          <Text style={styles.calendarHint}>点击日期可补记或修改心情</Text>
         </View>
       </ScrollView>
+
+      {/* 日期补记Modal */}
+      <DateMoodModal
+        visible={modalDate !== null}
+        date={modalDate}
+        onClose={() => setModalDate(null)}
+        onRecorded={handleModalRecorded}
+      />
+
+      {/* Toast提示 */}
+      <Toast
+        message={toast.message}
+        type={toast.type}
+        visible={toast.visible}
+        onHide={hideToast}
+      />
     </View>
   );
 }
@@ -178,10 +252,19 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: COLORS.background,
+    paddingHorizontal: SPACING.xl,
+  },
+  loadingCard: {
+    alignItems: 'center',
+  },
+  loadingEmoji: {
+    fontSize: 48,
+    marginBottom: SPACING.md,
   },
   loadingText: {
     fontSize: FONT_SIZE.md,
     color: COLORS.textSecondary,
+    letterSpacing: 0.5,
   },
   scrollContent: {
     paddingBottom: SPACING.xxl,
@@ -280,5 +363,11 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: COLORS.text,
     letterSpacing: 0.5,
+  },
+  calendarHint: {
+    fontSize: FONT_SIZE.xs,
+    color: COLORS.textTertiary,
+    textAlign: 'center',
+    marginTop: SPACING.sm,
   },
 });

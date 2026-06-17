@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, Switch, TouchableOpacity, Alert } from 'react-native';
+import { View, Text, StyleSheet, Switch, TouchableOpacity, Alert, Modal, Pressable, ScrollView } from 'react-native';
 import * as Notifications from 'expo-notifications';
 import Constants from 'expo-constants';
 import { COLORS, SPACING, FONT_SIZE } from '../constants';
@@ -22,6 +22,7 @@ export default function SettingsScreen() {
   const [notificationHour, setNotificationHour] = useState(21);
   const [hasPermission, setHasPermission] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [timePickerVisible, setTimePickerVisible] = useState(false);
 
   // 初始化：加载持久化设置 + 检查权限
   useEffect(() => {
@@ -32,7 +33,7 @@ export default function SettingsScreen() {
         setNotificationHour(settings.hour);
         const { status } = await Notifications.getPermissionsAsync();
         setHasPermission(status === 'granted');
-      } catch (e) {
+      } catch {
         // 加载失败使用默认值
       } finally {
         setLoading(false);
@@ -62,20 +63,20 @@ export default function SettingsScreen() {
       }
       setNotificationEnabled(value);
       await saveNotificationSettings({ enabled: value, hour: notificationHour, minute: 0 });
-    } catch (e) {
+    } catch {
       Alert.alert('操作失败', '请稍后重试');
     }
   };
 
-  // 调整提醒时间
-  const adjustTime = async (delta: number) => {
-    const newHour = Math.max(0, Math.min(23, notificationHour + delta));
-    setNotificationHour(newHour);
+  // 选择提醒时间
+  const handleTimeSelect = async (hour: number) => {
+    setNotificationHour(hour);
+    setTimePickerVisible(false);
     if (notificationEnabled) {
       try {
-        await scheduleDailyReminder(newHour, 0);
-        await saveNotificationSettings({ enabled: true, hour: newHour, minute: 0 });
-      } catch (e) {
+        await scheduleDailyReminder(hour, 0);
+        await saveNotificationSettings({ enabled: true, hour, minute: 0 });
+      } catch {
         // 调度失败静默处理
       }
     }
@@ -101,53 +102,91 @@ export default function SettingsScreen() {
   // 从 expo-constants 读取版本号，与 package.json/app.json 保持一致
   const appVersion = Constants.expoConfig?.version ?? '0.0.0';
 
+  // 格式化时间显示
+  const timeLabel = `${String(notificationHour).padStart(2, '0')}:00`;
+
   return (
     <View style={styles.container}>
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>提醒设置</Text>
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>提醒设置</Text>
 
-        <View style={styles.settingRow}>
-          <View style={styles.settingInfo}>
-            <Text style={styles.settingLabel}>每日提醒</Text>
-            <Text style={styles.settingDesc}>每天定时提醒记录心情</Text>
+          <View style={styles.settingRow}>
+            <View style={styles.settingInfo}>
+              <Text style={styles.settingLabel}>每日提醒</Text>
+              <Text style={styles.settingDesc}>每天定时提醒记录心情</Text>
+            </View>
+            <Switch
+              value={notificationEnabled}
+              onValueChange={toggleNotification}
+              trackColor={{ false: COLORS.border, true: COLORS.good }}
+              thumbColor={COLORS.surface}
+              disabled={loading}
+            />
           </View>
-          <Switch
-            value={notificationEnabled}
-            onValueChange={toggleNotification}
-            trackColor={{ false: COLORS.border, true: COLORS.good }}
-            thumbColor={COLORS.surface}
-            disabled={loading}
-          />
+
+          {notificationEnabled && (
+            <TouchableOpacity
+              style={styles.timeRow}
+              onPress={() => setTimePickerVisible(true)}
+              activeOpacity={0.6}
+            >
+              <Text style={styles.settingLabel}>提醒时间</Text>
+              <View style={styles.timeDisplayWrap}>
+                <Text style={styles.timeDisplay}>{timeLabel}</Text>
+                <Text style={styles.timeArrow}>›</Text>
+              </View>
+            </TouchableOpacity>
+          )}
         </View>
 
-        {notificationEnabled && (
-          <View style={styles.timeRow}>
-            <Text style={styles.settingLabel}>提醒时间</Text>
-            <View style={styles.timeControl}>
-              <TouchableOpacity onPress={() => adjustTime(-1)} style={styles.timeBtn}>
-                <Text style={styles.timeBtnText}>-</Text>
-              </TouchableOpacity>
-              <Text style={styles.timeDisplay}>
-                {String(notificationHour).padStart(2, '0')}:00
-              </Text>
-              <TouchableOpacity onPress={() => adjustTime(1)} style={styles.timeBtn}>
-                <Text style={styles.timeBtnText}>+</Text>
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>关于</Text>
+          <View style={styles.settingRow}>
+            <Text style={styles.settingLabel}>一点心情 TapMood</Text>
+            <Text style={styles.versionText}>v{appVersion}</Text>
+          </View>
+          <View style={styles.settingRow}>
+            <Text style={styles.settingDesc}>所有数据仅存储在本地设备，不会上传至任何服务器。</Text>
+          </View>
+        </View>
+      </ScrollView>
+
+      {/* 时间选择Modal */}
+      <Modal visible={timePickerVisible} transparent animationType="slide" onRequestClose={() => setTimePickerVisible(false)}>
+        <Pressable style={styles.overlay} onPress={() => setTimePickerVisible(false)}>
+          <Pressable style={styles.timePickerModal} onPress={(e) => e.stopPropagation()}>
+            <View style={styles.pickerHeader}>
+              <Text style={styles.pickerTitle}>选择提醒时间</Text>
+              <TouchableOpacity onPress={() => setTimePickerVisible(false)}>
+                <Text style={styles.pickerClose}>完成</Text>
               </TouchableOpacity>
             </View>
-          </View>
-        )}
-      </View>
-
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>关于</Text>
-        <View style={styles.settingRow}>
-          <Text style={styles.settingLabel}>一点心情 TapMood</Text>
-          <Text style={styles.versionText}>v{appVersion}</Text>
-        </View>
-        <View style={styles.settingRow}>
-          <Text style={styles.settingDesc}>所有数据仅存储在本地设备，不会上传至任何服务器。</Text>
-        </View>
-      </View>
+            <Text style={styles.pickerHint}>选择整点时间</Text>
+            <ScrollView style={styles.hourGrid} showsVerticalScrollIndicator={false}>
+              <View style={styles.hourGridInner}>
+                {Array.from({ length: 24 }, (_, h) => (
+                  <TouchableOpacity
+                    key={h}
+                    style={[
+                      styles.hourBtn,
+                      notificationHour === h && styles.hourBtnActive,
+                    ]}
+                    onPress={() => handleTimeSelect(h)}
+                  >
+                    <Text style={[
+                      styles.hourBtnText,
+                      notificationHour === h && styles.hourBtnTextActive,
+                    ]}>
+                      {String(h).padStart(2, '0')}:00
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </ScrollView>
+          </Pressable>
+        </Pressable>
+      </Modal>
     </View>
   );
 }
@@ -156,6 +195,9 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: COLORS.background,
+  },
+  scrollContent: {
+    paddingBottom: SPACING.xxl,
   },
   section: {
     backgroundColor: COLORS.surface,
@@ -197,33 +239,84 @@ const styles = StyleSheet.create({
     borderTopColor: COLORS.border,
     marginTop: SPACING.sm,
   },
-  timeControl: {
+  timeDisplayWrap: {
     flexDirection: 'row',
     alignItems: 'center',
-  },
-  timeBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: COLORS.background,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  timeBtnText: {
-    fontSize: FONT_SIZE.lg,
-    color: COLORS.text,
-    fontWeight: '600',
   },
   timeDisplay: {
     fontSize: FONT_SIZE.lg,
     fontWeight: '600',
     color: COLORS.text,
-    marginHorizontal: SPACING.md,
-    minWidth: 60,
-    textAlign: 'center',
+  },
+  timeArrow: {
+    fontSize: 22,
+    color: COLORS.textTertiary,
+    marginLeft: SPACING.xs,
   },
   versionText: {
     fontSize: FONT_SIZE.sm,
     color: COLORS.textSecondary,
+  },
+  // 时间选择Modal
+  overlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.4)',
+    justifyContent: 'flex-end',
+  },
+  timePickerModal: {
+    backgroundColor: COLORS.surface,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    padding: SPACING.lg,
+    maxHeight: '70%',
+  },
+  pickerHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: SPACING.sm,
+  },
+  pickerTitle: {
+    fontSize: FONT_SIZE.lg,
+    fontWeight: '600',
+    color: COLORS.text,
+  },
+  pickerClose: {
+    fontSize: FONT_SIZE.md,
+    color: COLORS.accent,
+    fontWeight: '600',
+  },
+  pickerHint: {
+    fontSize: FONT_SIZE.xs,
+    color: COLORS.textSecondary,
+    marginBottom: SPACING.md,
+  },
+  hourGrid: {
+    maxHeight: 300,
+  },
+  hourGridInner: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+  },
+  hourBtn: {
+    width: '23%',
+    paddingVertical: SPACING.md,
+    borderRadius: 12,
+    backgroundColor: COLORS.background,
+    alignItems: 'center',
+    marginBottom: SPACING.sm,
+  },
+  hourBtnActive: {
+    backgroundColor: COLORS.accent,
+  },
+  hourBtnText: {
+    fontSize: FONT_SIZE.sm,
+    color: COLORS.text,
+    fontWeight: '500',
+  },
+  hourBtnTextActive: {
+    color: COLORS.surface,
+    fontWeight: '700',
   },
 });

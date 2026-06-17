@@ -1,15 +1,19 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import type { AnalysisPeriod } from '../types';
 import { COLORS, SPACING, FONT_SIZE } from '../constants';
 import { useMoodStats } from '../hooks/useMood';
 import { getWeekRange, getMonthRange, getYearRange } from '../utils/dateUtils';
+import { getStreak, getLongestStreak, getTotalRecordCount } from '../database/moodDB';
 import MoodPieChart from '../components/MoodPieChart';
 import MoodBarChart from '../components/MoodBarChart';
 
 export default function AnalysisScreen() {
   const [period, setPeriod] = useState<AnalysisPeriod>('month');
   const [chartType, setChartType] = useState<'pie' | 'bar'>('pie');
+  const [streak, setStreak] = useState(0);
+  const [longestStreak, setLongestStreak] = useState(0);
+  const [totalDays, setTotalDays] = useState(0);
 
   const getDateRange = useCallback(() => {
     switch (period) {
@@ -22,11 +26,35 @@ export default function AnalysisScreen() {
   const { start, end } = getDateRange();
   const { stats, loading, error } = useMoodStats(start, end);
 
+  // 加载全局统计（不受周期影响）
+  useEffect(() => {
+    (async () => {
+      try {
+        const [s, l, t] = await Promise.all([
+          getStreak(),
+          getLongestStreak(),
+          getTotalRecordCount(),
+        ]);
+        setStreak(s);
+        setLongestStreak(l);
+        setTotalDays(t);
+      } catch {
+        // 加载失败静默
+      }
+    })();
+  }, []);
+
   const periodTabs: { key: AnalysisPeriod; label: string }[] = [
     { key: 'week', label: '本周' },
     { key: 'month', label: '本月' },
     { key: 'year', label: '本年' },
   ];
+
+  // 计算最常见心情
+  const mostCommonMood = stats.total > 0
+    ? (stats.good >= stats.okay && stats.good >= stats.bad ? '好'
+      : stats.okay >= stats.bad ? '中' : '差')
+    : '-';
 
   return (
     <View style={styles.container}>
@@ -48,6 +76,22 @@ export default function AnalysisScreen() {
                 </Text>
               </TouchableOpacity>
             ))}
+          </View>
+        </View>
+
+        {/* 打卡统计卡片 */}
+        <View style={styles.statsCardRow}>
+          <View style={styles.statsCard}>
+            <Text style={styles.statsCardValue}>{streak}</Text>
+            <Text style={styles.statsCardLabel}>连续打卡</Text>
+          </View>
+          <View style={styles.statsCard}>
+            <Text style={styles.statsCardValue}>{longestStreak}</Text>
+            <Text style={styles.statsCardLabel}>最长连续</Text>
+          </View>
+          <View style={styles.statsCard}>
+            <Text style={styles.statsCardValue}>{totalDays}</Text>
+            <Text style={styles.statsCardLabel}>总记录</Text>
           </View>
         </View>
 
@@ -75,6 +119,12 @@ export default function AnalysisScreen() {
             <Text style={styles.emptyText}>加载中...</Text>
           ) : error ? (
             <Text style={styles.emptyText}>{error}</Text>
+          ) : stats.total === 0 ? (
+            <View style={styles.emptyState}>
+              <Text style={styles.emptyEmoji}>🌱</Text>
+              <Text style={styles.emptyText}>这个周期还没有记录</Text>
+              <Text style={styles.emptyHint}>去首页记录今天的心情吧</Text>
+            </View>
           ) : chartType === 'pie' ? (
             <MoodPieChart stats={stats} />
           ) : (
@@ -88,6 +138,10 @@ export default function AnalysisScreen() {
           <View style={styles.summaryRow}>
             <Text style={styles.summaryLabel}>记录天数</Text>
             <Text style={styles.summaryValue}>{stats.total} 天</Text>
+          </View>
+          <View style={styles.summaryRow}>
+            <Text style={styles.summaryLabel}>最常见心情</Text>
+            <Text style={styles.summaryValue}>{mostCommonMood}</Text>
           </View>
           <View style={styles.summaryRow}>
             <Text style={styles.summaryLabel}>心情好的占比</Text>
@@ -121,6 +175,29 @@ const styles = StyleSheet.create({
     marginTop: SPACING.md,
     borderRadius: 16,
     padding: SPACING.lg,
+  },
+  statsCardRow: {
+    flexDirection: 'row',
+    marginHorizontal: SPACING.md,
+    marginTop: SPACING.md,
+    gap: SPACING.sm,
+  },
+  statsCard: {
+    flex: 1,
+    backgroundColor: COLORS.surface,
+    borderRadius: 16,
+    paddingVertical: SPACING.md,
+    alignItems: 'center',
+  },
+  statsCardValue: {
+    fontSize: FONT_SIZE.xxl,
+    fontWeight: '700',
+    color: COLORS.text,
+  },
+  statsCardLabel: {
+    fontSize: FONT_SIZE.xs,
+    color: COLORS.textSecondary,
+    marginTop: SPACING.xs,
   },
   periodTabs: {
     flexDirection: 'row',
@@ -200,10 +277,22 @@ const styles = StyleSheet.create({
     color: COLORS.text,
     fontWeight: '600',
   },
+  emptyState: {
+    alignItems: 'center',
+    paddingVertical: SPACING.xl,
+  },
+  emptyEmoji: {
+    fontSize: 40,
+    marginBottom: SPACING.sm,
+  },
   emptyText: {
     fontSize: FONT_SIZE.md,
     color: COLORS.textSecondary,
     textAlign: 'center',
-    paddingVertical: SPACING.xl,
+  },
+  emptyHint: {
+    fontSize: FONT_SIZE.xs,
+    color: COLORS.textTertiary,
+    marginTop: SPACING.xs,
   },
 });
