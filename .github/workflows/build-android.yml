@@ -9,6 +9,8 @@ on:
 jobs:
   build-android:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write  # 允许创建Release和上传资源
     steps:
       - uses: actions/checkout@v4
 
