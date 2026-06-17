@@ -1,11 +1,11 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import type { MoodLevel, CalendarView } from '../types';
 import { COLORS, SPACING, FONT_SIZE } from '../constants';
 import { useTodayMood, useMoodRange } from '../hooks/useMood';
 import { initDatabase } from '../database/moodDB';
-import { getWeekRange, getMonthRange, getYearRange, getMonthName, addDays } from '../utils/dateUtils';
+import { getWeekRange, getMonthRange, getYearRange, getMonthName, getDaysInMonth, formatDate } from '../utils/dateUtils';
 import MoodSelector from '../components/MoodSelector';
 import TodayStatus from '../components/TodayStatus';
 import WeekView from '../components/WeekView';
@@ -19,7 +19,6 @@ export default function HomeScreen() {
 
   const { mood: todayMood, recordMood } = useTodayMood();
 
-  // 根据视图获取日期范围
   const getDateRange = useCallback(() => {
     switch (calendarView) {
       case 'week': return getWeekRange(viewDate);
@@ -31,46 +30,42 @@ export default function HomeScreen() {
   const { start, end } = getDateRange();
   const { records, refresh: refreshRecords } = useMoodRange(start, end);
 
-  // 初始化数据库
   useEffect(() => {
     initDatabase().then(() => setDbReady(true));
   }, []);
 
-  // 记录心情后刷新日历
   const handleMoodSelect = useCallback(async (level: MoodLevel) => {
     await recordMood(level);
     refreshRecords();
   }, [recordMood, refreshRecords]);
 
-  // 日期导航：前进/后退
   const navigateDate = useCallback((direction: -1 | 1) => {
     setViewDate((prev) => {
       const next = new Date(prev);
       switch (calendarView) {
-        case 'week':
-          next.setDate(next.getDate() + direction * 7);
-          break;
-        case 'month':
-          next.setMonth(next.getMonth() + direction);
-          break;
-        case 'year':
-          next.setFullYear(next.getFullYear() + direction);
-          break;
+        case 'week': next.setDate(next.getDate() + direction * 7); break;
+        case 'month': next.setMonth(next.getMonth() + direction); break;
+        case 'year': next.setFullYear(next.getFullYear() + direction); break;
       }
       return next;
     });
   }, [calendarView]);
 
-  // 回到今天
-  const goToday = useCallback(() => {
-    setViewDate(new Date());
-  }, []);
+  const goToday = useCallback(() => { setViewDate(new Date()); }, []);
 
-  // 切换视图时重置到今天
   const handleViewChange = useCallback((view: CalendarView) => {
     setCalendarView(view);
     setViewDate(new Date());
   }, []);
+
+  // 计算月度完成率
+  const monthProgress = useMemo(() => {
+    const now = new Date();
+    const daysInMonth = getDaysInMonth(now.getFullYear(), now.getMonth() + 1);
+    const today = now.getDate();
+    const recorded = records.length;
+    return { recorded, total: today, percent: today > 0 ? Math.round((recorded / today) * 100) : 0 };
+  }, [records]);
 
   if (!dbReady) {
     return (
@@ -86,7 +81,6 @@ export default function HomeScreen() {
     { key: 'year', label: '年' },
   ];
 
-  // 标题文字
   const calendarTitle = calendarView === 'year'
     ? `${viewDate.getFullYear()}年`
     : `${viewDate.getFullYear()}年${getMonthName(viewDate.getMonth() + 1)}`;
@@ -100,13 +94,25 @@ export default function HomeScreen() {
       >
         {/* 今日心情区域 */}
         <View style={styles.section}>
-          <TodayStatus mood={todayMood?.mood ?? null} />
+          <TodayStatus mood={todayMood?.mood ?? null} streak={0} />
           <MoodSelector onMoodSelect={handleMoodSelect} selectedMood={todayMood?.mood} />
         </View>
 
+        {/* 月度进度 */}
+        {calendarView === 'month' && (
+          <View style={styles.progressSection}>
+            <View style={styles.progressHeader}>
+              <Text style={styles.progressLabel}>本月记录</Text>
+              <Text style={styles.progressValue}>{monthProgress.recorded}/{monthProgress.total}天</Text>
+            </View>
+            <View style={styles.progressBar}>
+              <View style={[styles.progressFill, { width: `${monthProgress.percent}%` }]} />
+            </View>
+          </View>
+        )}
+
         {/* 日历视图区域 */}
         <View style={styles.section}>
-          {/* 视图切换标签 */}
           <View style={styles.viewTabs}>
             {viewTabs.map((tab) => (
               <TouchableOpacity
@@ -124,7 +130,6 @@ export default function HomeScreen() {
             ))}
           </View>
 
-          {/* 日期导航 */}
           <View style={styles.dateNav}>
             <TouchableOpacity onPress={() => navigateDate(-1)} style={styles.navBtn}>
               <Text style={styles.navBtnText}>‹</Text>
@@ -137,20 +142,11 @@ export default function HomeScreen() {
             </TouchableOpacity>
           </View>
 
-          {/* 日历内容 */}
-          {calendarView === 'week' && (
-            <WeekView currentDate={viewDate} records={records} />
-          )}
+          {calendarView === 'week' && <WeekView currentDate={viewDate} records={records} />}
           {calendarView === 'month' && (
-            <MonthView
-              year={viewDate.getFullYear()}
-              month={viewDate.getMonth() + 1}
-              records={records}
-            />
+            <MonthView year={viewDate.getFullYear()} month={viewDate.getMonth() + 1} records={records} />
           )}
-          {calendarView === 'year' && (
-            <YearView year={viewDate.getFullYear()} records={records} />
-          )}
+          {calendarView === 'year' && <YearView year={viewDate.getFullYear()} records={records} />}
         </View>
       </ScrollView>
     </View>
@@ -179,13 +175,45 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.surface,
     marginHorizontal: SPACING.md,
     marginTop: SPACING.md,
-    borderRadius: 16,
+    borderRadius: 20,
     padding: SPACING.lg,
+  },
+  progressSection: {
+    backgroundColor: COLORS.surface,
+    marginHorizontal: SPACING.md,
+    marginTop: SPACING.sm,
+    borderRadius: 20,
+    padding: SPACING.md,
+  },
+  progressHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: SPACING.sm,
+  },
+  progressLabel: {
+    fontSize: FONT_SIZE.sm,
+    color: COLORS.textSecondary,
+  },
+  progressValue: {
+    fontSize: FONT_SIZE.sm,
+    color: COLORS.text,
+    fontWeight: '600',
+  },
+  progressBar: {
+    height: 6,
+    backgroundColor: COLORS.border,
+    borderRadius: 3,
+    overflow: 'hidden',
+  },
+  progressFill: {
+    height: '100%',
+    backgroundColor: COLORS.good,
+    borderRadius: 3,
   },
   viewTabs: {
     flexDirection: 'row',
     backgroundColor: COLORS.background,
-    borderRadius: 10,
+    borderRadius: 12,
     padding: 3,
     marginBottom: SPACING.md,
   },
@@ -193,14 +221,14 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingVertical: SPACING.sm,
     alignItems: 'center',
-    borderRadius: 8,
+    borderRadius: 10,
   },
   viewTabActive: {
     backgroundColor: COLORS.surface,
     elevation: 2,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
+    shadowOpacity: 0.08,
     shadowRadius: 2,
   },
   viewTabText: {
@@ -236,5 +264,6 @@ const styles = StyleSheet.create({
     fontSize: FONT_SIZE.lg,
     fontWeight: '600',
     color: COLORS.text,
+    letterSpacing: 0.5,
   },
 });

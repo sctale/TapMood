@@ -1,5 +1,5 @@
-import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Animated } from 'react-native';
+import React, { useRef, useEffect } from 'react';
+import { View, Text, TouchableOpacity, StyleSheet, Animated, Easing } from 'react-native';
 import type { MoodLevel } from '../types';
 import { MOOD_CONFIG, MOOD_LEVELS, COLORS, SPACING, FONT_SIZE } from '../constants';
 
@@ -11,36 +11,67 @@ interface MoodSelectorProps {
 
 export default function MoodSelector({ onMoodSelect, selectedMood, size = 'large' }: MoodSelectorProps) {
   const isLarge = size === 'large';
+  const scaleAnims = useRef(MOOD_LEVELS.map(() => new Animated.Value(1))).current;
+
+  const animatePress = (index: number) => {
+    Animated.sequence([
+      Animated.timing(scaleAnims[index], {
+        toValue: 0.9,
+        duration: 100,
+        easing: Easing.ease,
+        useNativeDriver: true,
+      }),
+      Animated.timing(scaleAnims[index], {
+        toValue: 1,
+        duration: 150,
+        easing: Easing.elastic(1.2),
+        useNativeDriver: true,
+      }),
+    ]).start();
+  };
 
   return (
     <View style={styles.container}>
-      {MOOD_LEVELS.map((level) => {
+      {MOOD_LEVELS.map((level, index) => {
         const config = MOOD_CONFIG[level];
         const isSelected = selectedMood === level;
 
         return (
-          <TouchableOpacity
-            key={level}
-            style={[
-              styles.moodButton,
-              isLarge ? styles.moodButtonLarge : styles.moodButtonSmall,
-              { backgroundColor: isSelected ? config.color : COLORS.surface },
-              isSelected && styles.moodButtonSelected,
-            ]}
-            onPress={() => onMoodSelect(level)}
-            activeOpacity={0.7}
-          >
-            <Text style={[styles.moodEmoji, isLarge ? styles.moodEmojiLarge : styles.moodEmojiSmall]}>
-              {config.emoji}
-            </Text>
-            <Text style={[
-              styles.moodLabel,
-              isLarge ? styles.moodLabelLarge : styles.moodLabelSmall,
-              { color: isSelected ? COLORS.surface : config.color },
-            ]}>
-              {config.label}
-            </Text>
-          </TouchableOpacity>
+          <Animated.View key={level} style={{ transform: [{ scale: scaleAnims[index] }] }}>
+            <TouchableOpacity
+              style={[
+                styles.moodButton,
+                isLarge ? styles.moodButtonLarge : styles.moodButtonSmall,
+                isSelected && {
+                  backgroundColor: config.color,
+                  borderColor: 'transparent',
+                },
+                !isSelected && {
+                  backgroundColor: COLORS.surface,
+                  borderColor: COLORS.border,
+                },
+              ]}
+              onPress={() => {
+                animatePress(index);
+                onMoodSelect(level);
+              }}
+              activeOpacity={0.85}
+            >
+              <Text style={[styles.moodEmoji, isLarge ? styles.moodEmojiLarge : styles.moodEmojiSmall]}>
+                {config.emoji}
+              </Text>
+              <Text style={[
+                styles.moodLabel,
+                isLarge ? styles.moodLabelLarge : styles.moodLabelSmall,
+                { color: isSelected ? COLORS.surface : config.color },
+              ]}>
+                {config.label}
+              </Text>
+              {isSelected && (
+                <View style={[styles.selectedDot, { backgroundColor: COLORS.surface }]} />
+              )}
+            </TouchableOpacity>
+          </Animated.View>
         );
       })}
     </View>
@@ -57,45 +88,43 @@ const styles = StyleSheet.create({
   moodButton: {
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: 20,
-    borderWidth: 2,
-    borderColor: COLORS.border,
+    borderRadius: 24,
+    borderWidth: 1.5,
   },
   moodButtonLarge: {
-    width: 100,
-    height: 120,
+    width: 104,
+    height: 128,
     paddingVertical: SPACING.md,
   },
   moodButtonSmall: {
-    width: 72,
-    height: 88,
+    width: 76,
+    height: 92,
     paddingVertical: SPACING.sm,
-  },
-  moodButtonSelected: {
-    borderColor: 'transparent',
-    elevation: 4,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.15,
-    shadowRadius: 4,
   },
   moodEmoji: {
     textAlign: 'center',
   },
   moodEmojiLarge: {
-    fontSize: 40,
+    fontSize: 44,
   },
   moodEmojiSmall: {
-    fontSize: 28,
+    fontSize: 30,
   },
   moodLabel: {
     fontWeight: '600',
     marginTop: SPACING.xs,
+    letterSpacing: 0.5,
   },
   moodLabelLarge: {
     fontSize: FONT_SIZE.md,
   },
   moodLabelSmall: {
     fontSize: FONT_SIZE.sm,
+  },
+  selectedDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    marginTop: SPACING.xs,
   },
 });

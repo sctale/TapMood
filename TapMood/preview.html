@@ -7,43 +7,44 @@
 <style>
 * { margin: 0; padding: 0; box-sizing: border-box; }
 body {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', sans-serif;
-  background: #FAFAFA;
-  color: #212121;
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'PingFang SC', 'Hiragino Sans GB', sans-serif;
+  background: #F8F6F3;
+  color: #2D2D2D;
   display: flex;
   justify-content: center;
   min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
 }
 
 /* 手机外壳 */
 .phone-frame {
   width: 390px;
   min-height: 844px;
-  background: #FAFAFA;
+  background: #F8F6F3;
   position: relative;
   overflow: hidden;
-  box-shadow: 0 20px 60px rgba(0,0,0,0.15);
-  border-radius: 40px;
+  box-shadow: 0 24px 80px rgba(0,0,0,0.12);
+  border-radius: 44px;
   border: 8px solid #1a1a1a;
   margin: 20px 0;
 }
 
 /* 状态栏 */
 .status-bar {
-  height: 50px;
+  height: 54px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 24px;
-  font-size: 14px;
+  padding: 0 28px;
+  font-size: 15px;
   font-weight: 600;
 }
 
 /* 主内容区 */
 .content {
-  height: calc(100% - 50px - 70px);
+  height: calc(100% - 54px - 72px);
   overflow-y: auto;
-  padding-bottom: 20px;
+  padding-bottom: 24px;
   -webkit-overflow-scrolling: touch;
 }
 .content::-webkit-scrollbar { display: none; }
@@ -52,86 +53,160 @@ body {
 .card {
   background: #FFFFFF;
   margin: 12px 16px;
-  border-radius: 16px;
-  padding: 20px;
+  border-radius: 20px;
+  padding: 24px;
+  transition: transform 0.2s;
 }
 
 /* 今日状态 */
 .today-status {
   text-align: center;
-  padding: 16px 0;
+  padding: 20px 0 12px;
 }
-.today-status .prompt {
-  font-size: 22px;
+.today-status .greeting {
+  font-size: 26px;
   font-weight: 300;
-  color: #212121;
+  color: #2D2D2D;
+  letter-spacing: 1px;
 }
-.today-status .emoji { font-size: 48px; margin-bottom: 8px; }
-.today-status .status-text { font-size: 18px; font-weight: 600; }
-.today-status .hint { font-size: 12px; color: #757575; margin-top: 4px; }
+.today-status .sub-greeting {
+  font-size: 13px;
+  color: #9E9E9E;
+  margin-top: 6px;
+}
+.today-status .emoji { font-size: 52px; margin-bottom: 10px; }
+.today-status .status-text { font-size: 18px; font-weight: 600; letter-spacing: 0.5px; }
+.today-status .hint { font-size: 11px; color: #BDBDBD; margin-top: 6px; }
+
+/* 连续打卡徽章 */
+.streak-badge {
+  display: inline-flex;
+  align-items: center;
+  margin-top: 10px;
+  padding: 4px 14px;
+  background: #FFF9F5;
+  border-radius: 12px;
+  font-size: 13px;
+  color: #2D2D2D;
+  font-weight: 500;
+}
 
 /* 心情选择器 */
 .mood-selector {
   display: flex;
   justify-content: center;
   gap: 14px;
-  padding: 12px 0;
+  padding: 16px 0 8px;
 }
 .mood-btn {
-  width: 96px;
-  height: 116px;
-  border-radius: 20px;
-  border: 2px solid #E0E0E0;
+  width: 104px;
+  height: 128px;
+  border-radius: 24px;
+  border: 1.5px solid #F0EDE8;
   background: #FFFFFF;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  transition: all 0.25s ease;
+  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
   user-select: none;
+  position: relative;
 }
-.mood-btn:hover { transform: translateY(-2px); }
-.mood-btn:active { transform: scale(0.96); }
-.mood-btn .emoji { font-size: 40px; }
-.mood-btn .label { font-size: 16px; font-weight: 600; margin-top: 4px; }
+.mood-btn:hover { transform: translateY(-3px); box-shadow: 0 8px 24px rgba(0,0,0,0.08); }
+.mood-btn:active { transform: scale(0.94); }
+.mood-btn .emoji { font-size: 44px; }
+.mood-btn .label { font-size: 15px; font-weight: 600; margin-top: 4px; letter-spacing: 0.5px; }
+.mood-btn .dot {
+  width: 6px; height: 6px; border-radius: 3px;
+  margin-top: 6px; opacity: 0;
+  transition: opacity 0.2s;
+}
 
-.mood-btn.bad { border-color: #9E9E9E; }
-.mood-btn.bad.active { background: #9E9E9E; border-color: #9E9E9E; }
+/* 差 - 柔和靛蓝 */
+.mood-btn.bad { border-color: #C5CAE9; }
+.mood-btn.bad .label { color: #7986CB; }
+.mood-btn.bad.active {
+  background: linear-gradient(135deg, #9FA8DA, #5C6BC0);
+  border-color: transparent;
+  box-shadow: 0 8px 24px rgba(121,134,203,0.3);
+}
 .mood-btn.bad.active .label { color: #fff; }
+.mood-btn.bad.active .dot { background: #fff; opacity: 1; }
 
-.mood-btn.okay { border-color: #FFC107; }
-.mood-btn.okay.active { background: #FFC107; border-color: #FFC107; }
+/* 中 - 温暖琥珀 */
+.mood-btn.okay { border-color: #FFE0B2; }
+.mood-btn.okay .label { color: #FFB74D; }
+.mood-btn.okay.active {
+  background: linear-gradient(135deg, #FFCC80, #FFA726);
+  border-color: transparent;
+  box-shadow: 0 8px 24px rgba(255,183,77,0.3);
+}
 .mood-btn.okay.active .label { color: #fff; }
+.mood-btn.okay.active .dot { background: #fff; opacity: 1; }
 
-.mood-btn.good { border-color: #4CAF50; }
-.mood-btn.good.active { background: #4CAF50; border-color: #4CAF50; }
+/* 好 - 柔和薄荷绿 */
+.mood-btn.good { border-color: #C8E6C9; }
+.mood-btn.good .label { color: #81C784; }
+.mood-btn.good.active {
+  background: linear-gradient(135deg, #A5D6A7, #66BB6A);
+  border-color: transparent;
+  box-shadow: 0 8px 24px rgba(129,199,132,0.3);
+}
 .mood-btn.good.active .label { color: #fff; }
+.mood-btn.good.active .dot { background: #fff; opacity: 1; }
+
+/* 月度进度 */
+.progress-card {
+  background: #FFFFFF;
+  margin: 8px 16px;
+  border-radius: 20px;
+  padding: 16px 20px;
+}
+.progress-header {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+.progress-label { font-size: 13px; color: #9E9E9E; }
+.progress-value { font-size: 13px; color: #2D2D2D; font-weight: 600; }
+.progress-bar {
+  height: 6px;
+  background: #F0EDE8;
+  border-radius: 3px;
+  overflow: hidden;
+}
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #A5D6A7, #66BB6A);
+  border-radius: 3px;
+  transition: width 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
 
 /* 视图切换标签 */
 .view-tabs {
   display: flex;
-  background: #FAFAFA;
-  border-radius: 10px;
+  background: #F8F6F3;
+  border-radius: 12px;
   padding: 3px;
-  margin-bottom: 16px;
+  margin-bottom: 18px;
 }
 .view-tab {
   flex: 1;
   padding: 8px 0;
   text-align: center;
-  border-radius: 8px;
-  font-size: 14px;
-  color: #757575;
+  border-radius: 10px;
+  font-size: 13px;
+  color: #9E9E9E;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.25s;
   user-select: none;
 }
 .view-tab.active {
   background: #FFFFFF;
-  color: #212121;
+  color: #2D2D2D;
   font-weight: 600;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+  box-shadow: 0 1px 4px rgba(0,0,0,0.06);
 }
 
 /* 日期导航 */
@@ -139,7 +214,7 @@ body {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 16px;
+  margin-bottom: 18px;
 }
 .nav-btn {
   width: 40px;
@@ -148,30 +223,73 @@ body {
   align-items: center;
   justify-content: center;
   font-size: 24px;
-  color: #757575;
+  color: #9E9E9E;
   cursor: pointer;
   border-radius: 20px;
   transition: background 0.2s;
   user-select: none;
 }
-.nav-btn:hover { background: #F5F5F5; }
+.nav-btn:hover { background: #F0EDE8; }
 .calendar-title {
   font-size: 18px;
   font-weight: 600;
   cursor: pointer;
+  letter-spacing: 0.5px;
 }
+
+/* 月视图 */
+.month-view .month-header {
+  display: flex;
+  justify-content: space-around;
+  margin-bottom: 6px;
+}
+.month-view .month-header span {
+  font-size: 11px;
+  color: #9E9E9E;
+  width: 40px;
+  text-align: center;
+  font-weight: 500;
+}
+.month-view .month-row {
+  display: flex;
+  justify-content: space-around;
+  margin-bottom: 4px;
+}
+.month-view .month-cell {
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.month-view .month-circle {
+  width: 36px;
+  height: 36px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  transition: all 0.2s;
+}
+.month-view .month-circle:hover { transform: scale(1.08); }
+.month-view .month-circle.recorded { color: #fff; font-weight: 600; }
+.month-view .month-circle.empty-past { color: #9E9E9E; background: #F0EDE8; }
+.month-view .month-circle.empty-future { color: #BDBDBD; background: transparent; }
+.month-view .month-circle.today { border: 2px solid #2D2D2D; font-weight: 700; }
 
 /* 周视图 */
 .week-view .week-header {
   display: flex;
   justify-content: space-around;
-  margin-bottom: 8px;
+  margin-bottom: 10px;
 }
 .week-view .week-header span {
-  font-size: 12px;
-  color: #757575;
+  font-size: 11px;
+  color: #9E9E9E;
   width: 44px;
   text-align: center;
+  font-weight: 500;
 }
 .week-view .week-days {
   display: flex;
@@ -180,7 +298,7 @@ body {
 .week-view .day-block {
   width: 44px;
   height: 44px;
-  border-radius: 12px;
+  border-radius: 14px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -189,47 +307,8 @@ body {
   color: #fff;
   transition: transform 0.2s;
 }
-.week-view .day-block.empty { background: #E0E0E0; color: #757575; }
-.week-view .day-block.today { border: 2px solid #212121; font-weight: 700; }
-
-/* 月视图 */
-.month-view .month-header {
-  display: flex;
-  justify-content: space-around;
-  margin-bottom: 4px;
-}
-.month-view .month-header span {
-  font-size: 12px;
-  color: #757575;
-  width: 38px;
-  text-align: center;
-}
-.month-view .month-row {
-  display: flex;
-  justify-content: space-around;
-  margin-bottom: 2px;
-}
-.month-view .month-cell {
-  width: 38px;
-  height: 38px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-.month-view .month-circle {
-  width: 34px;
-  height: 34px;
-  border-radius: 10px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 12px;
-  transition: transform 0.15s;
-}
-.month-view .month-circle:hover { transform: scale(1.1); }
-.month-view .month-circle.recorded { color: #fff; font-weight: 600; }
-.month-view .month-circle.empty { color: #757575; background: transparent; }
-.month-view .month-circle.today { border: 2px solid #212121; }
+.week-view .day-block.empty { background: #F0EDE8; color: #9E9E9E; }
+.week-view .day-block.today { border: 2px solid #2D2D2D; font-weight: 700; }
 
 /* 年视图 */
 .year-view .year-grid {
@@ -243,10 +322,10 @@ body {
   text-align: center;
 }
 .year-view .month-block .month-name {
-  font-size: 12px;
-  color: #757575;
+  font-size: 11px;
+  color: #9E9E9E;
   font-weight: 500;
-  margin-bottom: 4px;
+  margin-bottom: 6px;
 }
 .year-view .mini-grid {
   display: flex;
@@ -263,55 +342,55 @@ body {
 /* 分析页 */
 .period-tabs {
   display: flex;
-  background: #FAFAFA;
-  border-radius: 10px;
+  background: #F8F6F3;
+  border-radius: 12px;
   padding: 3px;
 }
 .period-tab {
   flex: 1;
   padding: 8px 0;
   text-align: center;
-  border-radius: 8px;
-  font-size: 14px;
-  color: #757575;
+  border-radius: 10px;
+  font-size: 13px;
+  color: #9E9E9E;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.25s;
   user-select: none;
 }
 .period-tab.active {
   background: #FFFFFF;
-  color: #212121;
+  color: #2D2D2D;
   font-weight: 600;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+  box-shadow: 0 1px 4px rgba(0,0,0,0.06);
 }
 
 .chart-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 16px;
+  margin-bottom: 18px;
 }
-.chart-header .title { font-size: 18px; font-weight: 600; }
+.chart-header .title { font-size: 18px; font-weight: 600; letter-spacing: 0.5px; }
 .chart-toggle {
   display: flex;
-  background: #FAFAFA;
+  background: #F8F6F3;
   border-radius: 8px;
   padding: 2px;
 }
 .chart-toggle-btn {
-  padding: 4px 12px;
+  padding: 5px 14px;
   border-radius: 6px;
   font-size: 12px;
-  color: #757575;
+  color: #9E9E9E;
   cursor: pointer;
   transition: all 0.2s;
   user-select: none;
 }
 .chart-toggle-btn.active {
   background: #fff;
-  color: #212121;
+  color: #2D2D2D;
   font-weight: 600;
-  box-shadow: 0 1px 2px rgba(0,0,0,0.08);
+  box-shadow: 0 1px 2px rgba(0,0,0,0.06);
 }
 
 /* 饼图 */
@@ -329,32 +408,33 @@ body {
   transform: translate(-50%, -50%);
   font-size: 24px;
   font-weight: bold;
-  color: #212121;
+  color: #2D2D2D;
 }
-.legend { width: 100%; margin-top: 16px; }
+.legend { width: 100%; margin-top: 20px; }
 .legend-item {
   display: flex;
   align-items: center;
-  margin-bottom: 8px;
+  margin-bottom: 10px;
+  padding: 6px 0;
 }
 .legend-dot {
-  width: 12px;
-  height: 12px;
-  border-radius: 6px;
-  margin-right: 8px;
+  width: 14px;
+  height: 14px;
+  border-radius: 5px;
+  margin-right: 10px;
   flex-shrink: 0;
 }
-.legend-label { font-size: 14px; flex: 1; }
-.legend-percent { font-size: 14px; color: #757575; font-weight: 600; }
+.legend-label { font-size: 14px; flex: 1; color: #2D2D2D; }
+.legend-percent { font-size: 14px; color: #9E9E9E; font-weight: 600; }
 
 /* 柱图 */
 .bar-chart {
   display: flex;
   justify-content: center;
   align-items: flex-end;
-  padding: 16px 0;
-  gap: 20px;
-  height: 180px;
+  padding: 20px 0;
+  gap: 24px;
+  height: 190px;
 }
 .bar-group {
   display: flex;
@@ -362,57 +442,57 @@ body {
   align-items: center;
 }
 .bar {
-  width: 48px;
-  border-radius: 8px 8px 4px 4px;
-  transition: height 0.5s ease;
+  width: 52px;
+  border-radius: 10px;
+  transition: height 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
   min-height: 4px;
 }
-.bar-value { font-size: 14px; font-weight: 600; margin-bottom: 4px; }
-.bar-label { font-size: 12px; color: #757575; margin-top: 8px; }
+.bar-value { font-size: 14px; font-weight: 600; margin-bottom: 6px; color: #2D2D2D; }
+.bar-label { font-size: 12px; color: #9E9E9E; margin-top: 10px; }
 
 /* 数据摘要 */
 .summary-row {
   display: flex;
   justify-content: space-between;
-  padding: 10px 0;
-  border-bottom: 1px solid #F5F5F5;
+  padding: 12px 0;
+  border-bottom: 1px solid #F8F6F3;
 }
 .summary-row:last-child { border-bottom: none; }
-.summary-label { font-size: 14px; color: #757575; }
-.summary-value { font-size: 14px; font-weight: 600; }
+.summary-label { font-size: 14px; color: #9E9E9E; }
+.summary-value { font-size: 14px; font-weight: 600; color: #2D2D2D; }
 
 /* 设置页 */
 .setting-row {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 10px 0;
+  padding: 12px 0;
 }
-.setting-label { font-size: 16px; }
-.setting-desc { font-size: 12px; color: #757575; margin-top: 2px; }
+.setting-label { font-size: 16px; color: #2D2D2D; }
+.setting-desc { font-size: 12px; color: #9E9E9E; margin-top: 3px; }
 .setting-info { flex: 1; }
 
 /* 开关 */
 .toggle {
-  width: 48px;
-  height: 28px;
-  border-radius: 14px;
-  background: #E0E0E0;
+  width: 50px;
+  height: 30px;
+  border-radius: 15px;
+  background: #F0EDE8;
   position: relative;
   cursor: pointer;
   transition: background 0.3s;
 }
-.toggle.on { background: #4CAF50; }
+.toggle.on { background: #81C784; }
 .toggle .knob {
-  width: 24px;
-  height: 24px;
-  border-radius: 12px;
+  width: 26px;
+  height: 26px;
+  border-radius: 13px;
   background: #fff;
   position: absolute;
   top: 2px;
   left: 2px;
-  transition: left 0.3s;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+  transition: left 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  box-shadow: 0 2px 6px rgba(0,0,0,0.15);
 }
 .toggle.on .knob { left: 22px; }
 
@@ -421,20 +501,20 @@ body {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 12px 0;
-  border-top: 1px solid #F5F5F5;
+  padding: 14px 0;
+  border-top: 1px solid #F8F6F3;
   margin-top: 8px;
 }
 .time-control {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 14px;
 }
 .time-btn {
-  width: 36px;
-  height: 36px;
-  border-radius: 18px;
-  background: #FAFAFA;
+  width: 38px;
+  height: 38px;
+  border-radius: 19px;
+  background: #F8F6F3;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -442,23 +522,26 @@ body {
   font-weight: 600;
   cursor: pointer;
   user-select: none;
+  color: #2D2D2D;
+  transition: background 0.2s;
 }
-.time-btn:hover { background: #F0F0F0; }
+.time-btn:hover { background: #F0EDE8; }
 .time-display {
   font-size: 20px;
   font-weight: 600;
-  min-width: 60px;
+  min-width: 64px;
   text-align: center;
+  color: #2D2D2D;
 }
-.version-text { font-size: 14px; color: #757575; }
+.version-text { font-size: 14px; color: #9E9E9E; }
 
 /* 底部导航 */
 .tab-bar {
-  height: 70px;
+  height: 72px;
   background: #FFFFFF;
-  border-top: 1px solid #F0F0F0;
+  border-top: 1px solid #F0EDE8;
   display: flex;
-  padding-bottom: 10px;
+  padding-bottom: 12px;
   position: absolute;
   bottom: 0;
   left: 0;
@@ -472,14 +555,15 @@ body {
   justify-content: center;
   cursor: pointer;
   transition: color 0.2s;
-  color: #757575;
+  color: #BDBDBD;
   user-select: none;
 }
-.tab-item.active { color: #212121; }
+.tab-item.active { color: #2D2D2D; }
 .tab-item svg { width: 24px; height: 24px; }
 .tab-item .tab-label {
-  font-size: 12px;
-  margin-top: 2px;
+  font-size: 11px;
+  margin-top: 3px;
+  font-weight: 500;
 }
 .tab-item.active .tab-label { font-weight: 600; }
 
@@ -488,27 +572,30 @@ body {
 .page.active { display: block; }
 
 /* 动画 */
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(8px); }
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(12px); }
   to { opacity: 1; transform: translateY(0); }
 }
-.card { animation: fadeIn 0.3s ease; }
+.card { animation: fadeInUp 0.4s ease; }
 
 /* 提示浮层 */
 .toast {
   position: fixed;
-  top: 80px;
+  top: 90px;
   left: 50%;
-  transform: translateX(-50%) translateY(-20px);
-  background: rgba(0,0,0,0.8);
+  transform: translateX(-50%) translateY(-16px);
+  background: rgba(45,45,45,0.88);
+  backdrop-filter: blur(10px);
   color: #fff;
-  padding: 10px 24px;
-  border-radius: 20px;
+  padding: 10px 28px;
+  border-radius: 24px;
   font-size: 14px;
+  font-weight: 500;
   opacity: 0;
-  transition: all 0.3s ease;
+  transition: all 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
   pointer-events: none;
   z-index: 100;
+  letter-spacing: 0.5px;
 }
 .toast.show {
   opacity: 1;
@@ -521,39 +608,50 @@ body {
 <div class="toast" id="toast"></div>
 
 <div class="phone-frame">
-  <!-- 状态栏 -->
   <div class="status-bar">
     <span>9:41</span>
     <span>📶 🔋</span>
   </div>
 
-  <!-- 主内容 -->
   <div class="content" id="content">
-
     <!-- 首页 -->
     <div class="page active" id="page-home">
-      <!-- 今日心情 -->
       <div class="card">
         <div class="today-status" id="todayStatus">
-          <div class="prompt">今天心情如何？</div>
+          <div class="greeting">今天感觉怎么样？</div>
+          <div class="sub-greeting">点选下方记录此刻心情</div>
+          <div class="streak-badge">🔥 连续 5 天</div>
         </div>
         <div class="mood-selector" id="moodSelector">
           <div class="mood-btn bad" onclick="selectMood('bad')">
             <span class="emoji">😔</span>
             <span class="label">差</span>
+            <span class="dot"></span>
           </div>
           <div class="mood-btn okay" onclick="selectMood('okay')">
             <span class="emoji">😐</span>
             <span class="label">中</span>
+            <span class="dot"></span>
           </div>
           <div class="mood-btn good" onclick="selectMood('good')">
             <span class="emoji">😊</span>
             <span class="label">好</span>
+            <span class="dot"></span>
           </div>
         </div>
       </div>
 
-      <!-- 日历视图 -->
+      <!-- 月度进度 -->
+      <div class="progress-card" id="progressCard">
+        <div class="progress-header">
+          <span class="progress-label">本月记录</span>
+          <span class="progress-value" id="progressValue">12/17天</span>
+        </div>
+        <div class="progress-bar">
+          <div class="progress-fill" id="progressFill" style="width:71%"></div>
+        </div>
+      </div>
+
       <div class="card">
         <div class="view-tabs">
           <div class="view-tab" onclick="switchView('week')">周</div>
@@ -631,7 +729,7 @@ body {
         <div class="chart-header"><div class="title">关于</div></div>
         <div class="setting-row">
           <span class="setting-label">一点心情 TapMood</span>
-          <span class="version-text">v0.1.0</span>
+          <span class="version-text">v0.1.1</span>
         </div>
         <div class="setting-row">
           <span class="setting-desc">所有数据仅存储在本地设备，不会上传至任何服务器。</span>
@@ -640,7 +738,6 @@ body {
     </div>
   </div>
 
-  <!-- 底部导航 -->
   <div class="tab-bar">
     <div class="tab-item active" onclick="switchTab('home')">
       <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2L2 12h3v8h6v-6h2v6h6v-8h3L12 2z"/></svg>
@@ -659,49 +756,48 @@ body {
 
 <script>
 // ===== 数据层 =====
-const MOOD_COLORS = { bad: '#9E9E9E', okay: '#FFC107', good: '#4CAF50' };
+const MOOD_COLORS = { bad: '#7986CB', okay: '#FFB74D', good: '#81C784' };
+const MOOD_GRADIENTS = {
+  bad: ['#9FA8DA', '#5C6BC0'],
+  okay: ['#FFCC80', '#FFA726'],
+  good: ['#A5D6A7', '#66BB6A'],
+};
 const MOOD_EMOJIS = { bad: '😔', okay: '😐', good: '😊' };
 const MOOD_LABELS = { bad: '差', okay: '中', good: '好' };
 const MONTH_NAMES = ['一月','二月','三月','四月','五月','六月','七月','八月','九月','十月','十一月','十二月'];
 const WEEK_HEADERS = ['一','二','三','四','五','六','日'];
 
-// 模拟数据
 const mockData = {};
 (function generateMockData() {
-  const now = new Date(2026, 5, 17); // 2026年6月17日
-  const moods = ['bad','okay','good'];
-  // 本月数据
-  for (let d = 1; d <= 17; d++) {
-    const date = `2026-06-${String(d).padStart(2,'0')}`;
-    // 让数据有些规律：周末偏好，工作日波动
-    const dayOfWeek = new Date(2026, 5, d).getDay();
-    let mood;
-    if (dayOfWeek === 0 || dayOfWeek === 6) {
-      mood = Math.random() > 0.3 ? 'good' : 'okay';
-    } else {
-      const r = Math.random();
-      mood = r < 0.2 ? 'bad' : r < 0.5 ? 'okay' : 'good';
-    }
-    mockData[date] = mood;
-  }
-  // 上月数据
-  for (let d = 1; d <= 31; d++) {
-    const date = `2026-05-${String(d).padStart(2,'0')}`;
-    const r = Math.random();
-    mockData[date] = r < 0.2 ? 'bad' : r < 0.5 ? 'okay' : 'good';
-  }
-  // 年初至今
-  for (let m = 1; m <= 4; m++) {
+  for (let m = 1; m <= 5; m++) {
     const daysInMonth = new Date(2026, m, 0).getDate();
     for (let d = 1; d <= daysInMonth; d++) {
       const date = `2026-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-      const r = Math.random();
-      mockData[date] = r < 0.2 ? 'bad' : r < 0.5 ? 'okay' : 'good';
+      const dayOfWeek = new Date(2026, m-1, d).getDay();
+      let mood;
+      if (dayOfWeek === 0 || dayOfWeek === 6) {
+        mood = Math.random() > 0.3 ? 'good' : 'okay';
+      } else {
+        const r = Math.random();
+        mood = r < 0.2 ? 'bad' : r < 0.5 ? 'okay' : 'good';
+      }
+      mockData[date] = mood;
     }
+  }
+  for (let d = 1; d <= 17; d++) {
+    const date = `2026-06-${String(d).padStart(2,'0')}`;
+    const dayOfWeek = new Date(2026, 5, d).getDay();
+    let mood;
+    if (dayOfWeek === 0 || dayOfWeek === 6) {
+      mood = Math.random() > 0.25 ? 'good' : 'okay';
+    } else {
+      const r = Math.random();
+      mood = r < 0.15 ? 'bad' : r < 0.45 ? 'okay' : 'good';
+    }
+    mockData[date] = mood;
   }
 })();
 
-// ===== 状态 =====
 let currentMood = null;
 let currentView = 'month';
 let viewYear = 2026, viewMonth = 6;
@@ -710,7 +806,6 @@ let currentChart = 'pie';
 let notifEnabled = false;
 let notifHour = 21;
 
-// ===== Tab 切换 =====
 function switchTab(tab) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.getElementById('page-' + tab).classList.add('active');
@@ -720,34 +815,41 @@ function switchTab(tab) {
   if (tab === 'analysis') renderChart();
 }
 
-// ===== 心情选择 =====
 function selectMood(mood) {
   currentMood = mood;
-  // 更新按钮状态
   document.querySelectorAll('.mood-btn').forEach(btn => btn.classList.remove('active'));
   document.querySelector(`.mood-btn.${mood}`).classList.add('active');
-  // 更新今日状态
-  const today = new Date(2026, 5, 17);
-  const dateStr = `2026-06-17`;
-  mockData[dateStr] = mood;
+  mockData['2026-06-17'] = mood;
   document.getElementById('todayStatus').innerHTML = `
     <div class="emoji">${MOOD_EMOJIS[mood]}</div>
     <div class="status-text" style="color:${MOOD_COLORS[mood]}">今天心情：${MOOD_LABELS[mood]}</div>
     <div class="hint">点击可修改</div>
+    <div class="streak-badge">🔥 连续 6 天</div>
   `;
   showToast(`已记录：${MOOD_LABELS[mood]}`);
   renderCalendar();
+  updateProgress();
 }
 
-// ===== 日历视图切换 =====
+function updateProgress() {
+  let count = 0;
+  for (let d = 1; d <= 17; d++) {
+    const date = `2026-06-${String(d).padStart(2,'0')}`;
+    if (mockData[date]) count++;
+  }
+  const pct = Math.round(count / 17 * 100);
+  document.getElementById('progressValue').textContent = `${count}/17天`;
+  document.getElementById('progressFill').style.width = pct + '%';
+}
+
 function switchView(view) {
   currentView = view;
   document.querySelectorAll('.view-tab').forEach(t => t.classList.remove('active'));
   event.target.classList.add('active');
+  document.getElementById('progressCard').style.display = view === 'month' ? 'block' : 'none';
   renderCalendar();
 }
 
-// ===== 日期导航 =====
 function navigateDate(dir) {
   if (currentView === 'month') {
     viewMonth += dir;
@@ -759,21 +861,14 @@ function navigateDate(dir) {
   renderCalendar();
 }
 
-function goToday() {
-  viewYear = 2026; viewMonth = 6;
-  renderCalendar();
-}
+function goToday() { viewYear = 2026; viewMonth = 6; renderCalendar(); }
 
-// ===== 渲染日历 =====
 function renderCalendar() {
-  // 更新标题
   const title = currentView === 'year'
     ? `${viewYear}年`
     : `${viewYear}年${MONTH_NAMES[viewMonth - 1]}`;
   document.getElementById('calendarTitle').textContent = title;
-
   const container = document.getElementById('calendarContent');
-
   if (currentView === 'week') renderWeekView(container);
   else if (currentView === 'month') renderMonthView(container);
   else renderYearView(container);
@@ -785,23 +880,18 @@ function renderWeekView(container) {
   const mondayOffset = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
   const monday = new Date(today);
   monday.setDate(today.getDate() + mondayOffset);
-
-  let html = '<div class="week-view">';
-  html += '<div class="week-header">';
+  let html = '<div class="week-view"><div class="week-header">';
   for (let i = 0; i < 7; i++) {
-    const d = new Date(monday);
-    d.setDate(monday.getDate() + i);
+    const d = new Date(monday); d.setDate(monday.getDate() + i);
     html += `<span>${WEEK_HEADERS[d.getDay() === 0 ? 6 : d.getDay() - 1]}</span>`;
   }
   html += '</div><div class="week-days">';
-
   for (let i = 0; i < 7; i++) {
-    const d = new Date(monday);
-    d.setDate(monday.getDate() + i);
+    const d = new Date(monday); d.setDate(monday.getDate() + i);
     const dateStr = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
     const mood = mockData[dateStr];
     const isToday = dateStr === '2026-06-17';
-    const bg = mood ? MOOD_COLORS[mood] : '#E0E0E0';
+    const bg = mood ? MOOD_COLORS[mood] : '#F0EDE8';
     const cls = `day-block${mood ? '' : ' empty'}${isToday ? ' today' : ''}`;
     html += `<div class="${cls}" style="background:${bg}">${d.getDate()}</div>`;
   }
@@ -813,16 +903,16 @@ function renderMonthView(container) {
   const daysInMonth = new Date(viewYear, viewMonth, 0).getDate();
   const firstDay = new Date(viewYear, viewMonth - 1, 1).getDay();
   const startOffset = firstDay === 0 ? 6 : firstDay - 1;
+  const todayDate = new Date(2026, 5, 17);
 
-  let html = '<div class="month-view">';
-  html += '<div class="month-header">';
+  let html = '<div class="month-view"><div class="month-header">';
   WEEK_HEADERS.forEach(h => html += `<span>${h}</span>`);
   html += '</div>';
 
   let cellIndex = 0;
   for (let row = 0; row < 6; row++) {
-    let rowHasContent = false;
     let rowHtml = '<div class="month-row">';
+    let hasContent = false;
     for (let col = 0; col < 7; col++) {
       if (cellIndex < startOffset) {
         rowHtml += '<div class="month-cell"></div>';
@@ -831,21 +921,32 @@ function renderMonthView(container) {
         if (day > daysInMonth) {
           rowHtml += '<div class="month-cell"></div>';
         } else {
-          rowHasContent = true;
+          hasContent = true;
           const dateStr = `${viewYear}-${String(viewMonth).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
-          const mood = mockData[dateStr];
+          const record = mockData[dateStr];
           const isToday = dateStr === '2026-06-17';
-          const bg = mood ? MOOD_COLORS[mood] : 'transparent';
-          const cls = `month-circle${mood ? ' recorded' : ' empty'}${isToday ? ' today' : ''}`;
+          const cellDate = new Date(viewYear, viewMonth - 1, day);
+          const isFuture = cellDate > todayDate;
+          let cls = 'month-circle';
+          let bg;
+          if (record) {
+            cls += ' recorded';
+            bg = MOOD_COLORS[record];
+          } else if (isFuture) {
+            cls += ' empty-future';
+            bg = 'transparent';
+          } else {
+            cls += ' empty-past';
+            bg = '#F0EDE8';
+          }
+          if (isToday) cls += ' today';
           rowHtml += `<div class="month-cell"><div class="${cls}" style="background:${bg}">${day}</div></div>`;
         }
       }
       cellIndex++;
     }
     rowHtml += '</div>';
-    if (rowHasContent || row < Math.ceil((startOffset + daysInMonth) / 7)) {
-      html += rowHtml;
-    }
+    if (hasContent) html += rowHtml;
   }
   html += '</div>';
   container.innerHTML = html;
@@ -857,11 +958,8 @@ function renderYearView(container) {
     const daysInMonth = new Date(viewYear, m, 0).getDate();
     const firstDay = new Date(viewYear, m - 1, 1).getDay();
     const startOffset = firstDay === 0 ? 6 : firstDay - 1;
-
     html += `<div class="month-block"><div class="month-name">${MONTH_NAMES[m-1]}</div><div class="mini-grid">`;
-    for (let i = 0; i < startOffset; i++) {
-      html += '<div class="mini-cell" style="background:transparent"></div>';
-    }
+    for (let i = 0; i < startOffset; i++) html += '<div class="mini-cell" style="background:transparent"></div>';
     for (let d = 1; d <= daysInMonth; d++) {
       const dateStr = `${viewYear}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
       const mood = mockData[dateStr];
@@ -874,7 +972,6 @@ function renderYearView(container) {
   container.innerHTML = html;
 }
 
-// ===== 分析页 =====
 function switchPeriod(period) {
   currentPeriod = period;
   document.querySelectorAll('.period-tab').forEach(t => t.classList.remove('active'));
@@ -891,51 +988,35 @@ function switchChart(type) {
 
 function getStats() {
   let start, end;
-  if (currentPeriod === 'week') {
-    start = '2026-06-15'; end = '2026-06-21';
-  } else if (currentPeriod === 'month') {
-    start = '2026-06-01'; end = '2026-06-30';
-  } else {
-    start = '2026-01-01'; end = '2026-12-31';
-  }
+  if (currentPeriod === 'week') { start = '2026-06-15'; end = '2026-06-21'; }
+  else if (currentPeriod === 'month') { start = '2026-06-01'; end = '2026-06-30'; }
+  else { start = '2026-01-01'; end = '2026-12-31'; }
   const stats = { bad: 0, okay: 0, good: 0, total: 0 };
   Object.entries(mockData).forEach(([date, mood]) => {
-    if (date >= start && date <= end) {
-      stats[mood]++;
-      stats.total++;
-    }
+    if (date >= start && date <= end) { stats[mood]++; stats.total++; }
   });
   return stats;
 }
 
 function renderChart() {
   const stats = getStats();
-  const container = document.getElementById('chartContent');
-
-  // 更新摘要
   document.getElementById('totalDays').textContent = stats.total + ' 天';
   document.getElementById('goodPercent').textContent = stats.total ? Math.round(stats.good / stats.total * 100) + '%' : '-';
   document.getElementById('badPercent').textContent = stats.total ? Math.round(stats.bad / stats.total * 100) + '%' : '-';
-
-  if (currentChart === 'pie') renderPieChart(container, stats);
-  else renderBarChart(container, stats);
+  if (currentChart === 'pie') renderPieChart(stats);
+  else renderBarChart(stats);
 }
 
-function renderPieChart(container, stats) {
-  const size = 180;
-  const radius = 70;
-  const cx = size / 2, cy = size / 2;
+function renderPieChart(stats) {
+  const size = 180, radius = 70, cx = size/2, cy = size/2;
   const circumference = 2 * Math.PI * radius;
   const total = stats.total || 1;
-
   const segments = [
     { level: 'bad', value: stats.bad },
     { level: 'okay', value: stats.okay },
     { level: 'good', value: stats.good },
   ];
-
-  let offset = 0;
-  let paths = '';
+  let offset = 0, paths = '';
   segments.forEach(seg => {
     const ratio = seg.value / total;
     const dashArray = `${ratio * circumference} ${(1 - ratio) * circumference}`;
@@ -947,8 +1028,7 @@ function renderPieChart(container, stats) {
       transform="rotate(${rotation} ${cx} ${cy})"
       stroke-linecap="round"/>`;
   });
-
-  container.innerHTML = `
+  document.getElementById('chartContent').innerHTML = `
     <div class="pie-chart">
       <div class="pie-svg" style="position:relative;width:${size}px;height:${size}px">
         <svg width="${size}" height="${size}">${paths}</svg>
@@ -966,7 +1046,7 @@ function renderPieChart(container, stats) {
     </div>`;
 }
 
-function renderBarChart(container, stats) {
+function renderBarChart(stats) {
   const maxVal = Math.max(stats.bad, stats.okay, stats.good, 1);
   const maxH = 120;
   const segments = [
@@ -974,24 +1054,21 @@ function renderBarChart(container, stats) {
     { level: 'okay', value: stats.okay },
     { level: 'good', value: stats.good },
   ];
-
-  container.innerHTML = `
+  document.getElementById('chartContent').innerHTML = `
     <div class="bar-chart">
       ${segments.map(s => `
         <div class="bar-group">
           <div class="bar-value">${s.value}</div>
-          <div class="bar" style="background:${MOOD_COLORS[s.level]};height:${(s.value / maxVal) * maxH}px"></div>
+          <div class="bar" style="background:linear-gradient(180deg,${MOOD_GRADIENTS[s.level][0]},${MOOD_GRADIENTS[s.level][1]});height:${(s.value / maxVal) * maxH}px"></div>
           <div class="bar-label">${MOOD_LABELS[s.level]}</div>
         </div>
       `).join('')}
     </div>`;
 }
 
-// ===== 设置页 =====
 function toggleNotification() {
   notifEnabled = !notifEnabled;
-  const toggle = document.getElementById('notifToggle');
-  toggle.classList.toggle('on', notifEnabled);
+  document.getElementById('notifToggle').classList.toggle('on', notifEnabled);
   document.getElementById('timeRow').style.display = notifEnabled ? 'flex' : 'none';
   showToast(notifEnabled ? '已开启每日提醒' : '已关闭每日提醒');
 }
@@ -1001,17 +1078,17 @@ function adjustTime(delta) {
   document.getElementById('timeDisplay').textContent = `${String(notifHour).padStart(2,'0')}:00`;
 }
 
-// ===== Toast =====
 function showToast(msg) {
   const toast = document.getElementById('toast');
   toast.textContent = msg;
   toast.classList.add('show');
-  setTimeout(() => toast.classList.remove('show'), 1500);
+  setTimeout(() => toast.classList.remove('show'), 1800);
 }
 
-// ===== 初始化 =====
+// 初始化
 renderCalendar();
 renderChart();
+updateProgress();
 </script>
 </body>
 </html>
