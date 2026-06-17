@@ -4,8 +4,8 @@ import { StatusBar } from 'expo-status-bar';
 import type { MoodLevel, CalendarView } from '../types';
 import { COLORS, SPACING, FONT_SIZE } from '../constants';
 import { useTodayMood, useMoodRange } from '../hooks/useMood';
-import { initDatabase } from '../database/moodDB';
-import { getWeekRange, getMonthRange, getYearRange, getMonthName, formatDate } from '../utils/dateUtils';
+import { initDatabase, getStreak } from '../database/moodDB';
+import { getWeekRange, getMonthRange, getYearRange, getMonthName, formatDate, getDaysInMonth } from '../utils/dateUtils';
 import MoodSelector from '../components/MoodSelector';
 import TodayStatus from '../components/TodayStatus';
 import WeekView from '../components/WeekView';
@@ -16,6 +16,7 @@ export default function HomeScreen() {
   const [dbReady, setDbReady] = useState(false);
   const [calendarView, setCalendarView] = useState<CalendarView>('month');
   const [viewDate, setViewDate] = useState(new Date());
+  const [streak, setStreak] = useState(0);
 
   const { mood: todayMood, recordMood } = useTodayMood();
 
@@ -31,12 +32,20 @@ export default function HomeScreen() {
   const { records, refresh: refreshRecords } = useMoodRange(start, end);
 
   useEffect(() => {
-    initDatabase().then(() => setDbReady(true));
+    (async () => {
+      await initDatabase();
+      setDbReady(true);
+      const s = await getStreak();
+      setStreak(s);
+    })();
   }, []);
 
   const handleMoodSelect = useCallback(async (level: MoodLevel) => {
     await recordMood(level);
     refreshRecords();
+    // 刷新连续打卡天数
+    const s = await getStreak();
+    setStreak(s);
   }, [recordMood, refreshRecords]);
 
   const navigateDate = useCallback((direction: -1 | 1) => {
@@ -58,13 +67,20 @@ export default function HomeScreen() {
     setViewDate(new Date());
   }, []);
 
-  // 计算月度完成率
+  // 计算月度完成率：只在月视图且查看的是本月时才计算
   const monthProgress = useMemo(() => {
     const now = new Date();
+    const isCurrentMonth = viewDate.getFullYear() === now.getFullYear()
+      && viewDate.getMonth() === now.getMonth();
+    if (!isCurrentMonth) {
+      // 非本月：显示该月已记录天数 / 该月总天数
+      const totalDays = getDaysInMonth(viewDate.getFullYear(), viewDate.getMonth() + 1);
+      return { recorded: records.length, total: totalDays, percent: totalDays > 0 ? Math.round((records.length / totalDays) * 100) : 0 };
+    }
+    // 本月：已记录天数 / 今天日期
     const today = now.getDate();
-    const recorded = records.length;
-    return { recorded, total: today, percent: today > 0 ? Math.round((recorded / today) * 100) : 0 };
-  }, [records]);
+    return { recorded: records.length, total: today, percent: today > 0 ? Math.round((records.length / today) * 100) : 0 };
+  }, [records, viewDate]);
 
   if (!dbReady) {
     return (
@@ -93,7 +109,7 @@ export default function HomeScreen() {
       >
         {/* 今日心情区域 */}
         <View style={styles.section}>
-          <TodayStatus mood={todayMood?.mood ?? null} streak={0} />
+          <TodayStatus mood={todayMood?.mood ?? null} streak={streak} />
           <MoodSelector onMoodSelect={handleMoodSelect} selectedMood={todayMood?.mood} />
         </View>
 

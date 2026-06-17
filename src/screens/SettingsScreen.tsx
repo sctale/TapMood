@@ -1,7 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, Switch, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, Switch, TouchableOpacity, Alert } from 'react-native';
 import * as Notifications from 'expo-notifications';
+import Constants from 'expo-constants';
 import { COLORS, SPACING, FONT_SIZE } from '../constants';
+import type { NotificationSettings } from '../types';
+import { getNotificationSettings, saveNotificationSettings } from '../database/moodDB';
 
 // 配置通知处理器
 Notifications.setNotificationHandler({
@@ -18,17 +21,27 @@ export default function SettingsScreen() {
   const [notificationEnabled, setNotificationEnabled] = useState(false);
   const [notificationHour, setNotificationHour] = useState(21);
   const [hasPermission, setHasPermission] = useState(false);
+  const [loading, setLoading] = useState(true);
 
-  // 检查通知权限
+  // 初始化：加载持久化设置 + 检查权限
   useEffect(() => {
     (async () => {
-      const { status } = await Notifications.getPermissionsAsync();
-      setHasPermission(status === 'granted');
+      try {
+        const settings = await getNotificationSettings();
+        setNotificationEnabled(settings.enabled);
+        setNotificationHour(settings.hour);
+        const { status } = await Notifications.getPermissionsAsync();
+        setHasPermission(status === 'granted');
+      } catch (e) {
+        // 加载失败使用默认值
+      } finally {
+        setLoading(false);
+      }
     })();
   }, []);
 
   // 请求通知权限
-  const requestPermission = async () => {
+  const requestPermission = async (): Promise<boolean> => {
     const { status } = await Notifications.requestPermissionsAsync();
     setHasPermission(status === 'granted');
     return status === 'granted';
@@ -36,27 +49,40 @@ export default function SettingsScreen() {
 
   // 切换通知开关
   const toggleNotification = async (value: boolean) => {
-    if (value) {
-      const granted = hasPermission || await requestPermission();
-      if (!granted) return;
-      await scheduleDailyReminder(notificationHour);
-    } else {
-      await Notifications.cancelAllScheduledNotificationsAsync();
+    try {
+      if (value) {
+        const granted = hasPermission || await requestPermission();
+        if (!granted) {
+          Alert.alert('权限不足', '请在系统设置中允许通知权限');
+          return;
+        }
+        await scheduleDailyReminder(notificationHour, 0);
+      } else {
+        await Notifications.cancelAllScheduledNotificationsAsync();
+      }
+      setNotificationEnabled(value);
+      await saveNotificationSettings({ enabled: value, hour: notificationHour, minute: 0 });
+    } catch (e) {
+      Alert.alert('操作失败', '请稍后重试');
     }
-    setNotificationEnabled(value);
   };
 
   // 调整提醒时间
-  const adjustTime = (delta: number) => {
+  const adjustTime = async (delta: number) => {
     const newHour = Math.max(0, Math.min(23, notificationHour + delta));
     setNotificationHour(newHour);
     if (notificationEnabled) {
-      scheduleDailyReminder(newHour);
+      try {
+        await scheduleDailyReminder(newHour, 0);
+        await saveNotificationSettings({ enabled: true, hour: newHour, minute: 0 });
+      } catch (e) {
+        // 调度失败静默处理
+      }
     }
   };
 
   // 设置每日提醒
-  const scheduleDailyReminder = async (hour: number) => {
+  const scheduleDailyReminder = async (hour: number, minute: number) => {
     await Notifications.cancelAllScheduledNotificationsAsync();
     await Notifications.scheduleNotificationAsync({
       content: {
@@ -67,10 +93,13 @@ export default function SettingsScreen() {
       trigger: {
         type: Notifications.SchedulableTriggerInputTypes.DAILY,
         hour,
-        minute: 0,
+        minute,
       },
     });
   };
+
+  // 从 expo-constants 读取版本号，与 package.json/app.json 保持一致
+  const appVersion = Constants.expoConfig?.version ?? '0.0.0';
 
   return (
     <View style={styles.container}>
@@ -87,6 +116,7 @@ export default function SettingsScreen() {
             onValueChange={toggleNotification}
             trackColor={{ false: COLORS.border, true: COLORS.good }}
             thumbColor={COLORS.surface}
+            disabled={loading}
           />
         </View>
 
@@ -112,7 +142,7 @@ export default function SettingsScreen() {
         <Text style={styles.sectionTitle}>关于</Text>
         <View style={styles.settingRow}>
           <Text style={styles.settingLabel}>一点心情 TapMood</Text>
-          <Text style={styles.versionText}>v1.0.0</Text>
+          <Text style={styles.versionText}>v{appVersion}</Text>
         </View>
         <View style={styles.settingRow}>
           <Text style={styles.settingDesc}>所有数据仅存储在本地设备，不会上传至任何服务器。</Text>

@@ -20,19 +20,13 @@ export default function AnalysisScreen() {
   }, [period]);
 
   const { start, end } = getDateRange();
-  const { stats, loading } = useMoodStats(start, end);
+  const { stats, loading, error } = useMoodStats(start, end);
 
   const periodTabs: { key: AnalysisPeriod; label: string }[] = [
     { key: 'week', label: '本周' },
     { key: 'month', label: '本月' },
     { key: 'year', label: '本年' },
   ];
-
-  const periodLabel: Record<AnalysisPeriod, string> = {
-    week: '本周',
-    month: '本月',
-    year: '本年',
-  };
 
   return (
     <View style={styles.container}>
@@ -60,7 +54,7 @@ export default function AnalysisScreen() {
         {/* 图表区域 */}
         <View style={styles.section}>
           <View style={styles.chartHeader}>
-            <Text style={styles.sectionTitle}>{periodLabel[period]}心情分布</Text>
+            <Text style={styles.sectionTitle}>{periodTabs.find(t => t.key === period)?.label}心情分布</Text>
             <View style={styles.chartToggle}>
               <TouchableOpacity
                 style={[styles.toggleBtn, chartType === 'pie' && styles.toggleBtnActive]}
@@ -77,7 +71,11 @@ export default function AnalysisScreen() {
             </View>
           </View>
 
-          {chartType === 'pie' ? (
+          {loading ? (
+            <Text style={styles.emptyText}>加载中...</Text>
+          ) : error ? (
+            <Text style={styles.emptyText}>{error}</Text>
+          ) : chartType === 'pie' ? (
             <MoodPieChart stats={stats} />
           ) : (
             <MoodBarChart stats={stats} />
@@ -201,5 +199,11 @@ const styles = StyleSheet.create({
     fontSize: FONT_SIZE.sm,
     color: COLORS.text,
     fontWeight: '600',
+  },
+  emptyText: {
+    fontSize: FONT_SIZE.md,
+    color: COLORS.textSecondary,
+    textAlign: 'center',
+    paddingVertical: SPACING.xl,
   },
 });

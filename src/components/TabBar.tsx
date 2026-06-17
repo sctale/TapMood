@@ -4,14 +4,14 @@ import Svg, { Path, Rect, Circle } from 'react-native-svg';
 import { COLORS, SPACING, FONT_SIZE } from '../constants';
 
 interface TabBarProps {
-  activeTab: string;
-  onTabPress: (tab: string) => void;
+  activeTab: 'home' | 'analysis' | 'settings';
+  onTabPress: (tab: 'home' | 'analysis' | 'settings') => void;
 }
 
 const tabs = [
-  { key: 'home', label: '记录' },
-  { key: 'analysis', label: '分析' },
-  { key: 'settings', label: '设置' },
+  { key: 'home' as const, label: '记录' },
+  { key: 'analysis' as const, label: '分析' },
+  { key: 'settings' as const, label: '设置' },
 ];
 
 // 简约图标组件
