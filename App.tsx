@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { StatusBar } from 'expo-status-bar';
 import { StyleSheet, Linking, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import * as Notifications from 'expo-notifications';
 import { COLORS } from './src/constants';
 import type { MoodLevel } from './src/types';
 import TabBar from './src/components/TabBar';
@@ -12,6 +13,37 @@ import SettingsScreen from './src/screens/SettingsScreen';
 // 小组件交互监听（平台自动选择 .ios / .android / 通用）
 import { setupWidgetInteractionListener, updateMoodWidget } from './src/widgets/MoodWidget';
 import * as moodDB from './src/database/moodDB';
+
+// 全局通知处理器：如果今天已记录心情，则不弹提醒
+Notifications.setNotificationHandler({
+  handleNotification: async (notification) => {
+    // 只对心情提醒通知做智能判断
+    if (notification.request.content.data?.type === 'mood_reminder') {
+      try {
+        const todayMood = await moodDB.getTodayMood();
+        if (todayMood) {
+          // 今天已记录心情，静默跳过
+          return {
+            shouldShowAlert: false,
+            shouldPlaySound: false,
+            shouldSetBadge: false,
+            shouldShowBanner: false,
+            shouldShowList: false,
+          };
+        }
+      } catch {
+        // 数据库查询失败，默认显示通知
+      }
+    }
+    return {
+      shouldShowAlert: true,
+      shouldPlaySound: false,
+      shouldSetBadge: false,
+      shouldShowBanner: true,
+      shouldShowList: true,
+    };
+  },
+});
 
 type TabKey = 'home' | 'analysis' | 'settings';
 

@@ -7,16 +7,7 @@ import type { NotificationSettings } from '../types';
 import { getNotificationSettings, saveNotificationSettings, getTotalRecordCount } from '../database/moodDB';
 import { exportMoodDataAsCSV } from '../utils/exportData';
 
-// 配置通知处理器
-Notifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldShowAlert: true,
-    shouldPlaySound: false,
-    shouldSetBadge: false,
-    shouldShowBanner: true,
-    shouldShowList: true,
-  }),
-});
+// 注意：setNotificationHandler 已移至 App.tsx 全局设置（支持智能跳过已记录的提醒）
 
 export default function SettingsScreen() {
   const [notificationEnabled, setNotificationEnabled] = useState(false);
