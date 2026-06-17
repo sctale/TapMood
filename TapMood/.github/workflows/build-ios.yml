@@ -1,0 +1,62 @@
+name: Build iOS IPA
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+jobs:
+  build-ios:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+          cache-dependency-path: TapMood/package-lock.json
+
+      - name: Install dependencies
+        working-directory: TapMood
+        run: npm ci
+
+      - name: Prebuild iOS
+        working-directory: TapMood
+        run: npx expo prebuild --platform ios --clean
+
+      - name: Build iOS
+        working-directory: TapMood/ios
+        run: |
+          xcodebuild -workspace TapMood.xcworkspace \
+            -scheme TapMood \
+            -configuration Release \
+            -sdk iphoneos \
+            -destination 'generic/platform=iOS' \
+            -archivePath build/TapMood.xcarchive \
+            archive \
+            CODE_SIGNING_ALLOWED=NO
+
+      - name: Export IPA
+        working-directory: TapMood/ios
+        run: |
+          mkdir -p build/ipa
+          cp -r build/TapMood.xcarchive/Products/Applications/*.app build/ipa/
+          cd build/ipa
+          mkdir Payload
+          mv *.app Payload/
+          zip -r TapMood.ipa Payload
+
+      - name: Upload IPA
+        uses: actions/upload-artifact@v4
+        with:
+          name: TapMood-ios-ipa
+          path: TapMood/ios/build/ipa/TapMood.ipa
+
+      - name: Upload to Release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: TapMood/ios/build/ipa/TapMood.ipa
