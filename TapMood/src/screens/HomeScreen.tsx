@@ -5,7 +5,7 @@ import type { MoodLevel, CalendarView } from '../types';
 import { COLORS, SPACING, FONT_SIZE } from '../constants';
 import { useTodayMood, useMoodRange } from '../hooks/useMood';
 import { initDatabase } from '../database/moodDB';
-import { getWeekRange, getMonthRange, getYearRange, getMonthName, getDaysInMonth, formatDate } from '../utils/dateUtils';
+import { getWeekRange, getMonthRange, getYearRange, getMonthName, formatDate } from '../utils/dateUtils';
 import MoodSelector from '../components/MoodSelector';
 import TodayStatus from '../components/TodayStatus';
 import WeekView from '../components/WeekView';
@@ -61,7 +61,6 @@ export default function HomeScreen() {
   // 计算月度完成率
   const monthProgress = useMemo(() => {
     const now = new Date();
-    const daysInMonth = getDaysInMonth(now.getFullYear(), now.getMonth() + 1);
     const today = now.getDate();
     const recorded = records.length;
     return { recorded, total: today, percent: today > 0 ? Math.round((recorded / today) * 100) : 0 };

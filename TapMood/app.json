@@ -2,17 +2,18 @@
   "expo": {
     "name": "一点心情",
     "slug": "TapMood",
-    "version": "0.1.1",
+    "version": "0.2.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
+    "scheme": "tapmood",
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.tapmood.app"
     },
     "android": {
       "adaptiveIcon": {
-        "backgroundColor": "#FAFAFA",
+        "backgroundColor": "#F8F6F3",
         "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
@@ -31,7 +32,20 @@
         "expo-notifications",
         {
           "icon": "./assets/icon.png",
-          "color": "#4CAF50"
+          "color": "#81C784"
+        }
+      ],
+      [
+        "expo-widgets",
+        {
+          "widgets": [
+            {
+              "name": "MoodWidget",
+              "displayName": "一点心情",
+              "description": "快速记录今天的心情",
+              "supportedFamilies": ["systemSmall", "systemMedium"]
+            }
+          ]
         }
       ]
     ]
