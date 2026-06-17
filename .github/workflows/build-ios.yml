@@ -31,7 +31,7 @@ jobs:
       - name: Build iOS
         working-directory: ios
         run: |
-          WORKSPACE=$(ls *.xcworkspace | head -1)
+          WORKSPACE=$(ls -d *.xcworkspace | head -1)
           SCHEME=$(xcodebuild -workspace "$WORKSPACE" -list | grep -A1 "Schemes:" | tail -1 | xargs)
           echo "Workspace: $WORKSPACE, Scheme: $SCHEME"
           xcodebuild -workspace "$WORKSPACE" \
