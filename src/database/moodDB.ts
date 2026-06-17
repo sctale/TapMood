@@ -168,6 +168,14 @@ export async function getTotalRecordCount(): Promise<number> {
   return result?.count ?? 0;
 }
 
+// 获取所有心情记录（用于导出）
+export async function getAllMoodRecords(): Promise<MoodRecord[]> {
+  const database = await getDB();
+  return database.getAllAsync<MoodRecord>(
+    'SELECT * FROM mood_records ORDER BY date ASC'
+  );
+}
+
 // 读取通知设置
 export async function getNotificationSettings(): Promise<NotificationSettings> {
   const database = await getDB();

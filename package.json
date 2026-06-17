@@ -1,13 +1,15 @@
 {
   "name": "tapmood",
-  "version": "0.2.2",
+  "version": "0.2.3",
   "main": "index.ts",
   "dependencies": {
     "expo": "~56.0.12",
     "expo-constants": "~56.0.18",
+    "expo-file-system": "~56.0.8",
     "expo-linking": "~56.0.14",
     "expo-notifications": "~56.0.18",
     "expo-router": "~56.2.11",
+    "expo-sharing": "~56.0.18",
     "expo-sqlite": "~56.0.5",
     "expo-status-bar": "~56.0.4",
     "expo-widgets": "~56.0.19",

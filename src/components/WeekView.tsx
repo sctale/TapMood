@@ -17,7 +17,7 @@ function buildRecordMap(records: MoodRecord[]): Map<string, MoodRecord> {
   return map;
 }
 
-export default function WeekView({ currentDate, records, onDatePress }: WeekViewProps) {
+export default React.memo(function WeekView({ currentDate, records, onDatePress }: WeekViewProps) {
   const recordMap = buildRecordMap(records);
 
   // 计算本周7天
@@ -69,7 +69,7 @@ export default function WeekView({ currentDate, records, onDatePress }: WeekView
       </View>
     </View>
   );
-}
+});
 
 const styles = StyleSheet.create({
   container: {

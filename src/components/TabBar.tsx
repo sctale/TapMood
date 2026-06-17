@@ -51,7 +51,7 @@ const icons: Record<string, React.FC<{ active: boolean }>> = {
   settings: SettingsIcon,
 };
 
-export default function TabBar({ activeTab, onTabPress }: TabBarProps) {
+export default React.memo(function TabBar({ activeTab, onTabPress }: TabBarProps) {
   return (
     <View style={styles.container}>
       {tabs.map((tab) => {
@@ -74,7 +74,7 @@ export default function TabBar({ activeTab, onTabPress }: TabBarProps) {
       })}
     </View>
   );
-}
+});
 
 const styles = StyleSheet.create({
   container: {

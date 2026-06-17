@@ -9,7 +9,7 @@ interface MoodSelectorProps {
   size?: 'large' | 'small';
 }
 
-export default function MoodSelector({ onMoodSelect, selectedMood, size = 'large' }: MoodSelectorProps) {
+export default React.memo(function MoodSelector({ onMoodSelect, selectedMood, size = 'large' }: MoodSelectorProps) {
   const isLarge = size === 'large';
   const scaleAnims = useRef(MOOD_LEVELS.map(() => new Animated.Value(1))).current;
 
@@ -76,7 +76,7 @@ export default function MoodSelector({ onMoodSelect, selectedMood, size = 'large
       })}
     </View>
   );
-}
+});
 
 const styles = StyleSheet.create({
   container: {

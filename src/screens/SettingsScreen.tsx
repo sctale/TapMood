@@ -4,7 +4,8 @@ import * as Notifications from 'expo-notifications';
 import Constants from 'expo-constants';
 import { COLORS, SPACING, FONT_SIZE } from '../constants';
 import type { NotificationSettings } from '../types';
-import { getNotificationSettings, saveNotificationSettings } from '../database/moodDB';
+import { getNotificationSettings, saveNotificationSettings, getTotalRecordCount } from '../database/moodDB';
+import { exportMoodDataAsCSV } from '../utils/exportData';
 
 // 配置通知处理器
 Notifications.setNotificationHandler({
@@ -23,6 +24,8 @@ export default function SettingsScreen() {
   const [hasPermission, setHasPermission] = useState(false);
   const [loading, setLoading] = useState(true);
   const [timePickerVisible, setTimePickerVisible] = useState(false);
+  const [totalRecords, setTotalRecords] = useState(0);
+  const [exporting, setExporting] = useState(false);
 
   // 初始化：加载持久化设置 + 检查权限
   useEffect(() => {
@@ -33,6 +36,8 @@ export default function SettingsScreen() {
         setNotificationHour(settings.hour);
         const { status } = await Notifications.getPermissionsAsync();
         setHasPermission(status === 'granted');
+        const count = await getTotalRecordCount();
+        setTotalRecords(count);
       } catch {
         // 加载失败使用默认值
       } finally {
@@ -105,6 +110,21 @@ export default function SettingsScreen() {
   // 格式化时间显示
   const timeLabel = `${String(notificationHour).padStart(2, '0')}:00`;
 
+  // 导出数据
+  const handleExport = async () => {
+    if (exporting) return;
+    if (totalRecords === 0) {
+      Alert.alert('提示', '暂无数据可导出');
+      return;
+    }
+    setExporting(true);
+    const result = await exportMoodDataAsCSV();
+    setExporting(false);
+    if (!result.success) {
+      Alert.alert('导出失败', result.error ?? '请稍后重试');
+    }
+  };
+
   return (
     <View style={styles.container}>
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
@@ -138,6 +158,29 @@ export default function SettingsScreen() {
               </View>
             </TouchableOpacity>
           )}
+        </View>
+
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>数据管理</Text>
+          <View style={styles.settingRow}>
+            <View style={styles.settingInfo}>
+              <Text style={styles.settingLabel}>已记录天数</Text>
+              <Text style={styles.settingDesc}>共 {totalRecords} 天的心情数据</Text>
+            </View>
+          </View>
+          <TouchableOpacity
+            style={styles.exportBtn}
+            onPress={handleExport}
+            disabled={exporting || totalRecords === 0}
+            activeOpacity={0.7}
+          >
+            <Text style={styles.exportBtnText}>
+              {exporting ? '导出中...' : '导出为CSV'}
+            </Text>
+          </TouchableOpacity>
+          <Text style={styles.exportHint}>
+            导出后可通过分享保存到任意位置，换机不丢数据
+          </Text>
         </View>
 
         <View style={styles.section}>
@@ -256,6 +299,24 @@ const styles = StyleSheet.create({
   versionText: {
     fontSize: FONT_SIZE.sm,
     color: COLORS.textSecondary,
+  },
+  exportBtn: {
+    backgroundColor: COLORS.background,
+    borderRadius: 12,
+    paddingVertical: SPACING.md,
+    alignItems: 'center',
+    marginTop: SPACING.sm,
+  },
+  exportBtnText: {
+    fontSize: FONT_SIZE.md,
+    color: COLORS.accent,
+    fontWeight: '600',
+  },
+  exportHint: {
+    fontSize: FONT_SIZE.xs,
+    color: COLORS.textTertiary,
+    textAlign: 'center',
+    marginTop: SPACING.sm,
   },
   // 时间选择Modal
   overlay: {

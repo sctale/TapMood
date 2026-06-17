@@ -19,7 +19,7 @@ function getGreeting(): string {
   return '夜深了，早点休息';
 }
 
-export default function TodayStatus({ mood, streak = 0 }: TodayStatusProps) {
+export default React.memo(function TodayStatus({ mood, streak = 0 }: TodayStatusProps) {
   const greeting = getGreeting();
 
   if (!mood) {
@@ -53,7 +53,7 @@ export default function TodayStatus({ mood, streak = 0 }: TodayStatusProps) {
       )}
     </View>
   );
-}
+});
 
 const styles = StyleSheet.create({
   container: {

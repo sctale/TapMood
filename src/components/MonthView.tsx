@@ -17,7 +17,7 @@ function buildRecordMap(records: MoodRecord[]): Map<string, MoodRecord> {
   return map;
 }
 
-export default function MonthView({ year, month, records, onDatePress }: MonthViewProps) {
+export default React.memo(function MonthView({ year, month, records, onDatePress }: MonthViewProps) {
   const recordMap = buildRecordMap(records);
   const daysInMonth = getDaysInMonth(year, month);
   const firstDay = getFirstDayOfMonth(year, month);
@@ -87,7 +87,7 @@ export default function MonthView({ year, month, records, onDatePress }: MonthVi
       ))}
     </View>
   );
-}
+});
 
 const styles = StyleSheet.create({
   container: {

@@ -15,7 +15,7 @@ function buildRecordMap(records: MoodRecord[]): Map<string, MoodRecord> {
   return map;
 }
 
-export default function YearView({ year, records }: YearViewProps) {
+export default React.memo(function YearView({ year, records }: YearViewProps) {
   const recordMap = buildRecordMap(records);
 
   // 12个月的迷你日历
@@ -58,7 +58,7 @@ export default function YearView({ year, records }: YearViewProps) {
       </View>
     </View>
   );
-}
+});
 
 const styles = StyleSheet.create({
   container: {
