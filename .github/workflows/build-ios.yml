@@ -24,11 +24,18 @@ jobs:
       - name: Prebuild iOS
         run: npx expo prebuild --platform ios --clean
 
+      - name: List iOS directory
+        working-directory: ios
+        run: ls -la
+
       - name: Build iOS
         working-directory: ios
         run: |
-          xcodebuild -workspace TapMood.xcworkspace \
-            -scheme TapMood \
+          WORKSPACE=$(ls *.xcworkspace | head -1)
+          SCHEME=$(xcodebuild -workspace "$WORKSPACE" -list | grep -A1 "Schemes:" | tail -1 | xargs)
+          echo "Workspace: $WORKSPACE, Scheme: $SCHEME"
+          xcodebuild -workspace "$WORKSPACE" \
+            -scheme "$SCHEME" \
             -configuration Release \
             -sdk iphoneos \
             -destination 'generic/platform=iOS' \
