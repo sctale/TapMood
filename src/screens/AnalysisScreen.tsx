@@ -1,10 +1,11 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import type { AnalysisPeriod } from '../types';
 import { COLORS, SPACING, FONT_SIZE } from '../constants';
 import { useMoodStats } from '../hooks/useMood';
 import { getWeekRange, getMonthRange, getYearRange } from '../utils/dateUtils';
 import { getStreak, getLongestStreak, getTotalRecordCount } from '../database/moodDB';
+import { getMoodTip } from '../utils/moodTips';
 import MoodPieChart from '../components/MoodPieChart';
 import MoodBarChart from '../components/MoodBarChart';
 
@@ -25,6 +26,9 @@ export default function AnalysisScreen() {
 
   const { start, end } = getDateRange();
   const { stats, loading, error } = useMoodStats(start, end);
+
+  // 根据心情比例生成温馨小提示
+  const tip = useMemo(() => getMoodTip(stats, period), [stats, period]);
 
   // 加载全局统计（不受周期影响）
   useEffect(() => {
@@ -131,6 +135,17 @@ export default function AnalysisScreen() {
             <MoodBarChart stats={stats} />
           )}
         </View>
+
+        {/* 温馨小提示 */}
+        {tip && (
+          <View style={styles.tipCard}>
+            <Text style={styles.tipEmoji}>{tip.emoji}</Text>
+            <View style={styles.tipContent}>
+              <Text style={styles.tipTitle}>{tip.title}</Text>
+              <Text style={styles.tipMessage}>{tip.message}</Text>
+            </View>
+          </View>
+        )}
 
         {/* 数据摘要 */}
         <View style={styles.section}>
@@ -294,5 +309,33 @@ const styles = StyleSheet.create({
     fontSize: FONT_SIZE.xs,
     color: COLORS.textTertiary,
     marginTop: SPACING.xs,
+  },
+  tipCard: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    backgroundColor: COLORS.surfaceAlt,
+    marginHorizontal: SPACING.md,
+    marginTop: SPACING.md,
+    borderRadius: 16,
+    padding: SPACING.lg,
+  },
+  tipEmoji: {
+    fontSize: 28,
+    marginRight: SPACING.md,
+    marginTop: 2,
+  },
+  tipContent: {
+    flex: 1,
+  },
+  tipTitle: {
+    fontSize: FONT_SIZE.md,
+    fontWeight: '600',
+    color: COLORS.text,
+    marginBottom: SPACING.xs,
+  },
+  tipMessage: {
+    fontSize: FONT_SIZE.sm,
+    color: COLORS.textSecondary,
+    lineHeight: 20,
   },
 });
