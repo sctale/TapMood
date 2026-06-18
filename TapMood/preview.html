@@ -461,6 +461,59 @@ body {
 .summary-label { font-size: 14px; color: #9E9E9E; }
 .summary-value { font-size: 14px; font-weight: 600; color: #2D2D2D; }
 
+/* 打卡统计卡片 */
+.stats-card-row {
+  display: flex;
+  margin: 12px 16px;
+  gap: 8px;
+}
+.stats-card {
+  flex: 1;
+  background: #FFFFFF;
+  border-radius: 16px;
+  padding: 16px 0;
+  text-align: center;
+}
+.stats-card-value {
+  font-size: 28px;
+  font-weight: 700;
+  color: #2D2D2D;
+}
+.stats-card-label {
+  font-size: 11px;
+  color: #9E9E9E;
+  margin-top: 4px;
+}
+
+/* 温馨小提示 */
+.tip-card {
+  display: flex;
+  align-items: flex-start;
+  background: #FFF9F5;
+  margin: 12px 16px;
+  border-radius: 16px;
+  padding: 24px;
+  animation: fadeInUp 0.4s ease;
+}
+.tip-emoji {
+  font-size: 28px;
+  margin-right: 16px;
+  margin-top: 2px;
+  flex-shrink: 0;
+}
+.tip-content { flex: 1; }
+.tip-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: #2D2D2D;
+  margin-bottom: 4px;
+}
+.tip-message {
+  font-size: 13px;
+  color: #9E9E9E;
+  line-height: 20px;
+}
+
 /* 设置页 */
 .setting-row {
   display: flex;
@@ -676,9 +729,24 @@ body {
           <div class="period-tab" onclick="switchPeriod('year')">本年</div>
         </div>
       </div>
+      <!-- 打卡统计卡片 -->
+      <div class="stats-card-row">
+        <div class="stats-card">
+          <div class="stats-card-value">5</div>
+          <div class="stats-card-label">连续打卡</div>
+        </div>
+        <div class="stats-card">
+          <div class="stats-card-value">12</div>
+          <div class="stats-card-label">最长连续</div>
+        </div>
+        <div class="stats-card">
+          <div class="stats-card-value">87</div>
+          <div class="stats-card-label">总记录</div>
+        </div>
+      </div>
       <div class="card">
         <div class="chart-header">
-          <div class="title">本月心情分布</div>
+          <div class="title" id="chartTitle">本月心情分布</div>
           <div class="chart-toggle">
             <div class="chart-toggle-btn active" onclick="switchChart('pie')">饼图</div>
             <div class="chart-toggle-btn" onclick="switchChart('bar')">柱图</div>
@@ -686,11 +754,23 @@ body {
         </div>
         <div id="chartContent"></div>
       </div>
+      <!-- 温馨小提示 -->
+      <div class="tip-card" id="tipCard">
+        <div class="tip-emoji" id="tipEmoji">🌸</div>
+        <div class="tip-content">
+          <div class="tip-title" id="tipTitle">温柔的一个月</div>
+          <div class="tip-message" id="tipMessage">这个月大部分日子你都在微笑，生活正在回应你的温柔</div>
+        </div>
+      </div>
       <div class="card">
         <div class="chart-header"><div class="title">数据摘要</div></div>
         <div class="summary-row">
           <span class="summary-label">记录天数</span>
           <span class="summary-value" id="totalDays">18 天</span>
+        </div>
+        <div class="summary-row">
+          <span class="summary-label">最常见心情</span>
+          <span class="summary-value" id="mostCommon">好</span>
         </div>
         <div class="summary-row">
           <span class="summary-label">心情好的占比</span>
@@ -729,7 +809,7 @@ body {
         <div class="chart-header"><div class="title">关于</div></div>
         <div class="setting-row">
           <span class="setting-label">一点心情 TapMood</span>
-          <span class="version-text">v0.1.1</span>
+          <span class="version-text">v0.2.6</span>
         </div>
         <div class="setting-row">
           <span class="setting-desc">所有数据仅存储在本地设备，不会上传至任何服务器。</span>
@@ -766,6 +846,120 @@ const MOOD_EMOJIS = { bad: '😔', okay: '😐', good: '😊' };
 const MOOD_LABELS = { bad: '差', okay: '中', good: '好' };
 const MONTH_NAMES = ['一月','二月','三月','四月','五月','六月','七月','八月','九月','十月','十一月','十二月'];
 const WEEK_HEADERS = ['一','二','三','四','五','六','日'];
+
+const PERIOD_LABELS = { week: '本周', month: '本月', year: '本年' };
+
+// 温馨小提示文案池
+const MOOD_TIPS = {
+  goodMajority: {
+    week: [
+      { emoji: '🌿', title: '这周很棒', message: '你的心情像春天的叶子一样舒展，继续保持这份自在吧' },
+      { emoji: '☀️', title: '阳光满满', message: '这周的好心情值得被记住，是你给自己的礼物' },
+      { emoji: '🎵', title: '节奏不错', message: '这一周你找到了让自己舒服的节奏，真不错' },
+    ],
+    month: [
+      { emoji: '🌸', title: '温柔的一个月', message: '这个月大部分日子你都在微笑，生活正在回应你的温柔' },
+      { emoji: '🌱', title: '好心情在生长', message: '一个月的好心情不是偶然，是你认真对待自己的证明' },
+      { emoji: '✨', title: '闪闪发光', message: '这个月你收集了很多闪亮的日子，它们会照亮未来的路' },
+    ],
+    year: [
+      { emoji: '🌻', title: '向阳而生', message: '这一年你选择了更多的微笑，这份力量会一直陪着你' },
+      { emoji: '🏔️', title: '稳步向前', message: '好心情不是终点，是路上的风景，你一直在走' },
+    ],
+  },
+  neutralMajority: {
+    week: [
+      { emoji: '☁️', title: '平淡也挺好', message: '不是每天都要精彩，平静本身就是一种力量' },
+      { emoji: '🍵', title: '慢下来也没事', message: '这周像一杯温茶，不浓不淡，刚刚好' },
+      { emoji: '📖', title: '日常的力量', message: '普通的日子里藏着安稳，这也是一种幸福' },
+    ],
+    month: [
+      { emoji: '🍂', title: '如常即好', message: '这个月没有大起大落，但平稳本身就是最好的消息' },
+      { emoji: '🌙', title: '安静的力量', message: '不是每段日子都需要高光，安静地过也是一种本事' },
+      { emoji: '🌾', title: '稳稳的', message: '这个月像一片安静的麦田，风来就摇，风停就静' },
+    ],
+    year: [
+      { emoji: '🌊', title: '细水长流', message: '这一年没有太多波澜，但细水长流本身就是最好的答案' },
+      { emoji: '🧘', title: '平和之年', message: '能在平淡中找到安宁，是一种了不起的能力' },
+    ],
+  },
+  badMajority: {
+    week: [
+      { emoji: '🫂', title: '辛苦了', message: '这周有点难熬，但你撑过来了，明天又是新的开始' },
+      { emoji: '🌧️', title: '雨会停的', message: '连阴天也有放晴的时候，给自己一个拥抱吧' },
+      { emoji: '🕯️', title: '你不是一个人', message: '低落的时候不用假装坚强，允许自己慢慢来' },
+    ],
+    month: [
+      { emoji: '🤍', title: '抱抱自己', message: '这个月不太容易，但你一直在走，这本身就很勇敢' },
+      { emoji: '🪴', title: '扎根的时候', message: '植物在冬天也会落叶，但根在生长，你也是' },
+      { emoji: '🌙', title: '夜深有星光', message: '难熬的日子也是日子，走过它，你就多了一份力量' },
+    ],
+    year: [
+      { emoji: '🛤️', title: '走过来了', message: '这一年不容易，但每一步都算数，辛苦了' },
+      { emoji: '🦋', title: '蜕变中', message: '最难的日子往往在孕育最深的成长，给自己时间' },
+    ],
+  },
+  volatile: {
+    week: [
+      { emoji: '🎢', title: '起伏的一周', message: '这周像坐过山车，但每一次低谷之后都有回升' },
+      { emoji: '🌈', title: '雨后彩虹', message: '有起有落才是真实的生活，你正在经历完整的自己' },
+    ],
+    month: [
+      { emoji: '🌤️', title: '阴晴圆缺', message: '这个月像天空一样多变，但每种天气都值得被看见' },
+      { emoji: '🎨', title: '丰富的底色', message: '大起大落的月份画出了最丰富的色彩，这就是真实的你' },
+    ],
+    year: [
+      { emoji: '🗺️', title: '丰富的旅程', message: '这一年的高低起伏，组成了独一无二的你' },
+      { emoji: '🎭', title: '完整的自己', message: '能感受到快乐也能承认低落，这才是完整的你' },
+    ],
+  },
+  sparse: {
+    week: [
+      { emoji: '📝', title: '开始记录吧', message: '多记几天心情，我就能更懂你了' },
+      { emoji: '🌱', title: '小苗刚发芽', message: '记录本身就是关心自己的第一步，继续加油' },
+    ],
+    month: [
+      { emoji: '🖋️', title: '慢慢来', message: '不着急，每天记一笔，时间会画出你的心情地图' },
+      { emoji: '🧩', title: '拼图进行中', message: '每一天的心情都是一块拼图，慢慢拼出完整的你' },
+    ],
+    year: [
+      { emoji: '🗺️', title: '旅程刚开始', message: '新的一年，让我们慢慢记录属于你的故事' },
+    ],
+  },
+};
+
+function seededIndex(seed, length) {
+  let hash = 0;
+  for (let i = 0; i < seed.length; i++) {
+    hash = ((hash << 5) - hash + seed.charCodeAt(i)) | 0;
+  }
+  return Math.abs(hash) % length;
+}
+
+function getMoodTip(stats, period) {
+  if (stats.total <= 1) return null;
+  const goodRatio = stats.total > 0 ? stats.good / stats.total : 0;
+  const badRatio = stats.total > 0 ? stats.bad / stats.total : 0;
+
+  if (stats.total <= 3) {
+    const tips = MOOD_TIPS.sparse[period];
+    return tips[seededIndex(period + '-' + stats.total, tips.length)];
+  }
+  if (goodRatio >= 0.3 && badRatio >= 0.3) {
+    const tips = MOOD_TIPS.volatile[period];
+    return tips[seededIndex(period + '-' + stats.total, tips.length)];
+  }
+  if (goodRatio >= 0.6) {
+    const tips = MOOD_TIPS.goodMajority[period];
+    return tips[seededIndex(period + '-' + stats.total, tips.length)];
+  }
+  if (badRatio >= 0.4) {
+    const tips = MOOD_TIPS.badMajority[period];
+    return tips[seededIndex(period + '-' + stats.total, tips.length)];
+  }
+  const tips = MOOD_TIPS.neutralMajority[period];
+  return tips[seededIndex(period + '-' + stats.total, tips.length)];
+}
 
 const mockData = {};
 (function generateMockData() {
@@ -1000,9 +1194,31 @@ function getStats() {
 
 function renderChart() {
   const stats = getStats();
+  const periodLabel = PERIOD_LABELS[currentPeriod];
+  document.getElementById('chartTitle').textContent = periodLabel + '心情分布';
   document.getElementById('totalDays').textContent = stats.total + ' 天';
   document.getElementById('goodPercent').textContent = stats.total ? Math.round(stats.good / stats.total * 100) + '%' : '-';
   document.getElementById('badPercent').textContent = stats.total ? Math.round(stats.bad / stats.total * 100) + '%' : '-';
+
+  // 最常见心情
+  const mostCommon = stats.total > 0
+    ? (stats.good >= stats.okay && stats.good >= stats.bad ? '好'
+      : stats.okay >= stats.bad ? '中' : '差')
+    : '-';
+  document.getElementById('mostCommon').textContent = mostCommon;
+
+  // 温馨小提示
+  const tip = getMoodTip(stats, currentPeriod);
+  const tipCard = document.getElementById('tipCard');
+  if (tip) {
+    tipCard.style.display = 'flex';
+    document.getElementById('tipEmoji').textContent = tip.emoji;
+    document.getElementById('tipTitle').textContent = tip.title;
+    document.getElementById('tipMessage').textContent = tip.message;
+  } else {
+    tipCard.style.display = 'none';
+  }
+
   if (currentChart === 'pie') renderPieChart(stats);
   else renderBarChart(stats);
 }
