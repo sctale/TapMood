@@ -91,8 +91,11 @@ git push origin main
 
 ### 6. 创建 GitHub Release
 
+> 安全提示：请不要将 GitHub Token 硬编码到文件中。执行前请先通过以下任一方式完成认证：
+> - 运行 `gh auth login` 进行交互式登录
+> - 在本地环境变量中设置 `GH_TOKEN`，例如 `$env:GH_TOKEN="<你的_token>"`
+
 ```powershell
-$env:GH_TOKEN="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"
 & "C:\Program Files\GitHub CLI\gh.exe" release create v<版本号> `
   "d:\V-Coding\TapMood\android\app\build\outputs\apk\release\app-release.apk" `
   --repo sctale/TapMood `
