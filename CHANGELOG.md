@@ -1,5 +1,19 @@
 # 更新日志
 
+## [0.3.3] - 2026-06-19
+
+### 重构
+- 合并两个小组件（4x1/2x1）为单个响应式小组件，遵循 Android 12+ 最佳实践
+- 使用 RemoteViews(Map<SizeF, RemoteViews>) 响应式布局，根据尺寸自动切换
+- 添加 previewLayout 属性，Android 12+ 选择器实时预览
+- 使用系统标准圆角（@android:dimen/system_app_widget_background_radius），v31+ 自动适配
+- PendingIntent 使用不同 requestCode，避免覆盖
+
+### 优化
+- 重新设计极简矢量图标：圆点眼替代线段眼 + 精致描边 + 更柔和配色
+- 按钮背景带色彩倾向（差=淡紫/中=暖灰/好=薄荷），提升辨识度
+- 图标配色升级：差=深紫/中=蓝灰/好=薄荷绿，更精致
+
 ## [0.3.2] - 2026-06-19
 
 ### 优化
