@@ -5,13 +5,25 @@ import { getToday } from '../utils/dateUtils';
 const DB_NAME = 'tapmood.db';
 
 let db: SQLite.SQLiteDatabase | null = null;
+let dbPromise: Promise<SQLite.SQLiteDatabase> | null = null;
 
 // 获取数据库实例
 async function getDB(): Promise<SQLite.SQLiteDatabase> {
-  if (!db) {
-    db = await SQLite.openDatabaseAsync(DB_NAME);
+  if (db) return db;
+
+  if (!dbPromise) {
+    dbPromise = SQLite.openDatabaseAsync(DB_NAME);
   }
-  return db;
+
+  try {
+    db = await dbPromise;
+    return db;
+  } catch (e) {
+    // 初始化失败时重置单例，确保下次调用可以重新尝试打开数据库
+    db = null;
+    dbPromise = null;
+    throw e;
+  }
 }
 
 // 初始化数据库表

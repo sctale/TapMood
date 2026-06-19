@@ -69,12 +69,12 @@ export default function HomeScreen() {
     } catch (e) {
       showToast('记录失败，请重试', 'error');
     }
-  }, [recordMood, refreshRecords, refreshToday, showToast]);
+  }, [recordMood, refreshRecords, refreshToday, showToast, updateMoodWidget]);
 
   // 监听小组件通过 Deep Link 发来的心情记录请求
   useEffect(() => {
-    const subscription = DeviceEventEmitter.addListener('recordMoodFromWidget', async ({ mood }: { mood: MoodLevel }) => {
-      handleMoodSelect(mood);
+    const subscription = DeviceEventEmitter.addListener('recordMoodFromWidget', ({ mood }: { mood: MoodLevel }) => {
+      handleMoodSelect(mood).catch(() => {});
     });
     return () => subscription.remove();
   }, [handleMoodSelect]);

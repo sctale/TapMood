@@ -1,5 +1,15 @@
 # 更新日志
 
+## [0.3.7] - 2026-06-19
+
+### 修复
+- 修复 One UI 8.5 小组件下方不显示名称的问题（label 改用 @string/widget_label 并合并到主 strings.xml）
+- 修复心情按钮多次点击后失效报错的问题
+  - moodDB.getDB() 改用单例 Promise，失败时可自动恢复重连
+  - useMood.recordMood 增加 3 秒安全超时，防止防重复机制卡死
+  - HomeScreen 事件监听增加异常捕获
+  - DateMoodModal 记录后同步更新小组件
+
 ## [0.3.6] - 2026-06-19
 
 ### 修复

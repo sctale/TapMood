@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, Modal, TouchableOpacity, Pressable } from 'reac
 import type { MoodLevel } from '../types';
 import { MOOD_CONFIG, MOOD_LEVELS, COLORS, SPACING, FONT_SIZE } from '../constants';
 import { getMoodByDate, recordMoodForDate, deleteMoodByDate } from '../database/moodDB';
+import { updateMoodWidget } from '../widgets/MoodWidget';
 import { parseDate, formatDate } from '../utils/dateUtils';
 
 interface DateMoodModalProps {
@@ -36,6 +37,8 @@ export default function DateMoodModal({ visible, date, onClose, onRecorded }: Da
     try {
       await recordMoodForDate(date, level);
       setCurrentMood(level);
+      // 同步更新小组件状态
+      await updateMoodWidget();
       onRecorded();
     } catch {
       // 失败静默，用户可重试

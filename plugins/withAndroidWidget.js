@@ -378,7 +378,7 @@ const WIDGET_LAYOUT_2x1 = `<?xml version="1.0" encoding="utf-8"?>
 // ============================================================
 const WIDGET_INFO = `<?xml version="1.0" encoding="utf-8"?>
 <appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
-    android:label="一点心情"
+    android:label="@string/widget_label"
     android:description="@string/widget_description"
     android:configure="com.tapmood.app.WidgetConfigActivity"
     android:widgetFeatures="reconfigurable"
@@ -502,6 +502,29 @@ function writeFile(dir, filename, content) {
   fs.writeFileSync(path.join(dir, filename), content);
 }
 
+// 将指定字符串合并到目标 strings.xml，已存在则更新，不存在则在 </resources> 前插入
+function mergeStringsXml(targetPath, strings) {
+  let content;
+  if (fs.existsSync(targetPath)) {
+    content = fs.readFileSync(targetPath, 'utf8');
+  } else {
+    content = '<?xml version="1.0" encoding="utf-8"?>\n<resources>\n</resources>';
+  }
+
+  Object.entries(strings).forEach(([name, value]) => {
+    const regex = new RegExp(`<string name="${name}"[^>]*>.*?</string>`, 's');
+    const replacement = `<string name="${name}">${value}</string>`;
+    if (regex.test(content)) {
+      content = content.replace(regex, replacement);
+    } else {
+      content = content.replace(/<\/resources>\s*$/, `  ${replacement}\n</resources>`);
+    }
+  });
+
+  fs.mkdirSync(path.dirname(targetPath), { recursive: true });
+  fs.writeFileSync(targetPath, content);
+}
+
 function withAndroidWidget(config) {
   config = withAndroidManifest(config, (config) => {
     const manifest = config.modResults.manifest;
@@ -584,6 +607,12 @@ function withAndroidWidget(config) {
 
     // 字符串
     writeFile(path.join(resDir, 'values'), 'strings_widget.xml', STRINGS_XML);
+
+    // 同时把小组件字符串合并到主 strings.xml，避免部分厂商/AAPT 无法读取独立 strings 文件
+    mergeStringsXml(path.join(resDir, 'values', 'strings.xml'), {
+      widget_label: '一点心情',
+      widget_description: '快速记录今天的心情',
+    });
 
     // 清理旧文件
     [

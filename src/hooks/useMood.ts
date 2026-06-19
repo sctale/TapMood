@@ -28,6 +28,12 @@ export function useTodayMood() {
     // 防止快速重复点击
     if (recordingRef.current) return null;
     recordingRef.current = true;
+
+    // 安全超时：即使异步操作异常卡住，3秒后自动释放
+    const safetyTimeout = setTimeout(() => {
+      recordingRef.current = false;
+    }, 3000);
+
     try {
       setError(null);
       const record = await moodDB.recordMood(level);
@@ -37,6 +43,7 @@ export function useTodayMood() {
       setError('记录心情失败');
       throw e;
     } finally {
+      clearTimeout(safetyTimeout);
       recordingRef.current = false;
     }
   }, [setMood]);
