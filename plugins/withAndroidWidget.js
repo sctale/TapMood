@@ -165,6 +165,138 @@ ${JAVA_UTILS}}
 `;
 
 // ============================================================
+// 小组件配置 Activity - 背景透明度选择
+// ============================================================
+const WIDGET_CONFIG_JAVA = `package com.tapmood.app;
+
+import android.app.Activity;
+import android.appwidget.AppWidgetManager;
+import android.content.Context;
+import android.content.Intent;
+import android.content.SharedPreferences;
+import android.os.Bundle;
+import android.view.Gravity;
+import android.view.View;
+import android.view.ViewGroup;
+import android.widget.Button;
+import android.widget.LinearLayout;
+import android.widget.RemoteViews;
+
+public class WidgetConfigActivity extends Activity {
+    private int appWidgetId;
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(createConfigLayout());
+
+        Intent intent = getIntent();
+        if (intent.hasExtra(AppWidgetManager.EXTRA_APPWIDGET_ID)) {
+            appWidgetId = intent.getIntExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, AppWidgetManager.INVALID_APPWIDGET_ID);
+        }
+
+        // 如果没有有效的 widget ID，取消
+        if (appWidgetId == AppWidgetManager.INVALID_APPWIDGET_ID) {
+            setResult(RESULT_CANCELED);
+            finish();
+        }
+    }
+
+    private View createConfigLayout() {
+        LinearLayout root = new LinearLayout(this);
+        root.setOrientation(LinearLayout.VERTICAL);
+        root.setGravity(Gravity.CENTER);
+        root.setPadding(48, 48, 48, 48);
+
+        // 标题
+        android.widget.TextView title = new android.widget.TextView(this);
+        title.setText("背景透明度");
+        title.setTextSize(20);
+        title.setTypeface(null, android.graphics.Typeface.BOLD);
+        title.setGravity(Gravity.CENTER);
+        LinearLayout.LayoutParams titleParams = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        titleParams.bottomMargin = 32;
+        root.addView(title, titleParams);
+
+        // 透明度选项
+        String[] labels = {"透明", "25%", "50%", "75%", "不透明"};
+        int[] levels = {0, 1, 2, 3, 4};
+
+        // 读取当前设置
+        int currentLevel = getBgAlphaLevel();
+
+        for (int i = 0; i < labels.length; i++) {
+            Button btn = new Button(this);
+            btn.setText(labels[i]);
+            btn.setAllCaps(false);
+            btn.setTag(levels[i]);
+
+            LinearLayout.LayoutParams btnParams = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+            btnParams.bottomMargin = 8;
+
+            if (levels[i] == currentLevel) {
+                btn.setBackgroundColor(0xFF26A69A);
+                btn.setTextColor(0xFFFFFFFF);
+            } else {
+                btn.setBackgroundColor(0xFFF5F5F5);
+                btn.setTextColor(0xFF333333);
+            }
+
+            btn.setOnClickListener(v -> {
+                int level = (int) v.getTag();
+                saveBgAlphaLevel(level);
+                updateWidget();
+                Intent resultValue = new Intent();
+                resultValue.putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, appWidgetId);
+                setResult(RESULT_OK, resultValue);
+                finish();
+            });
+
+            root.addView(btn, btnParams);
+        }
+
+        return root;
+    }
+
+    private void saveBgAlphaLevel(int level) {
+        try {
+            org.json.JSONObject json = new org.json.JSONObject();
+            json.put("bgAlpha", level);
+            java.io.File file = new java.io.File(getFilesDir(), "widget_config.json");
+            java.io.FileWriter writer = new java.io.FileWriter(file);
+            writer.write(json.toString());
+            writer.close();
+        } catch (Exception e) { e.printStackTrace(); }
+    }
+
+    private int getBgAlphaLevel() {
+        try {
+            java.io.File file = new java.io.File(getFilesDir(), "widget_config.json");
+            if (!file.exists()) return 3;
+            java.io.BufferedReader reader = new java.io.BufferedReader(new java.io.FileReader(file));
+            StringBuilder sb = new StringBuilder();
+            String line;
+            while ((line = reader.readLine()) != null) sb.append(line);
+            reader.close();
+            return new org.json.JSONObject(sb.toString()).optInt("bgAlpha", 3);
+        } catch (Exception e) { return 3; }
+    }
+
+    private void updateWidget() {
+        AppWidgetManager appWidgetManager = AppWidgetManager.getInstance(this);
+        RemoteViews views = new RemoteViews(getPackageName(), R.layout.mood_widget_4x1);
+        // 应用背景
+        int[] bgResIds = { R.drawable.widget_bg_0, R.drawable.widget_bg_25, R.drawable.widget_bg_50, R.drawable.widget_bg_75, R.drawable.widget_bg_100 };
+        int level = getBgAlphaLevel();
+        if (level >= 0 && level < bgResIds.length) {
+            views.setInt(R.id.widget_root, "setBackgroundResource", bgResIds[level]);
+        }
+        appWidgetManager.updateAppWidget(appWidgetId, views);
+    }
+}
+`;
+
+// ============================================================
 // 4x1 宽版布局：标题 + 三个极简图标按钮
 // ============================================================
 const WIDGET_LAYOUT_4x1 = `<?xml version="1.0" encoding="utf-8"?>
@@ -248,6 +380,8 @@ const WIDGET_INFO = `<?xml version="1.0" encoding="utf-8"?>
 <appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
     android:label="@string/widget_label"
     android:description="@string/widget_description"
+    android:configure="com.tapmood.app.WidgetConfigActivity"
+    android:widgetFeatures="reconfigurable"
     android:initialLayout="@layout/mood_widget_4x1"
     android:previewLayout="@layout/mood_widget_4x1"
     android:minWidth="276dp" android:minHeight="40dp"
@@ -396,6 +530,16 @@ function withAndroidWidget(config) {
       });
     }
     application.receiver = newReceivers;
+
+    // 注册 WidgetConfigActivity
+    const existingActivities = application.activity || [];
+    const hasConfigActivity = existingActivities.some((a) => a.$['android:name'] === '.WidgetConfigActivity');
+    if (!hasConfigActivity) {
+      application.activity = [...existingActivities, {
+        $: { 'android:name': '.WidgetConfigActivity', 'android:exported': 'true' }
+      }];
+    }
+
     return config;
   });
 
@@ -405,6 +549,7 @@ function withAndroidWidget(config) {
 
     // Java 类
     writeFile(javaDir, 'MoodWidget.java', WIDGET_JAVA);
+    writeFile(javaDir, 'WidgetConfigActivity.java', WIDGET_CONFIG_JAVA);
 
     // 布局
     writeFile(path.join(resDir, 'layout'), 'mood_widget_4x1.xml', WIDGET_LAYOUT_4x1);

@@ -42,18 +42,19 @@ export async function recordMoodForDate(date: string, mood: MoodLevel): Promise<
   const database = await getDB();
   const now = new Date().toISOString();
 
-  const result = await database.runAsync(
+  await database.runAsync(
     `INSERT INTO mood_records (date, mood, created_at) VALUES (?, ?, ?)
      ON CONFLICT(date) DO UPDATE SET mood = ?, created_at = ?`,
     [date, mood, now, mood, now]
   );
 
-  return {
-    id: result.lastInsertRowId,
-    date,
-    mood,
-    created_at: now,
-  };
+  // UPSERT 后查询获取正确的记录（避免 lastInsertRowId 在 UPDATE 时返回 0）
+  const record = await database.getFirstAsync<MoodRecord>(
+    'SELECT * FROM mood_records WHERE date = ?',
+    [date]
+  );
+
+  return record ?? { id: 0, date, mood, created_at: now };
 }
 
 // 删除指定日期的心情记录

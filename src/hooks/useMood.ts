@@ -24,9 +24,9 @@ export function useTodayMood() {
 
   useEffect(() => { refresh(); }, [refresh]);
 
-  const recordMood = useCallback(async (level: MoodLevel) => {
+  const recordMood = useCallback(async (level: MoodLevel): Promise<MoodRecord | null> => {
     // 防止快速重复点击
-    if (recordingRef.current) return;
+    if (recordingRef.current) return null;
     recordingRef.current = true;
     try {
       setError(null);

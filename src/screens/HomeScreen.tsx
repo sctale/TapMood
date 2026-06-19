@@ -56,7 +56,8 @@ export default function HomeScreen() {
 
   const handleMoodSelect = useCallback(async (level: MoodLevel) => {
     try {
-      await recordMood(level);
+      const result = await recordMood(level);
+      if (!result) return; // 防重复点击跳过，不显示提示
       refreshRecords();
       refreshToday();
       const s = await getStreak();
