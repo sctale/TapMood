@@ -1,6 +1,6 @@
 {
   "name": "tapmood",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "main": "index.ts",
   "dependencies": {
     "expo": "~56.0.12",
@@ -13,6 +13,7 @@
     "expo-sqlite": "~56.0.5",
     "expo-status-bar": "~56.0.4",
     "expo-widgets": "~56.0.19",
+    "hermes-compiler": "^250829098.0.10",
     "react": "19.2.3",
     "react-native": "0.85.3",
     "react-native-safe-area-context": "~5.7.0",

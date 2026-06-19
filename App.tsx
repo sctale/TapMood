@@ -86,11 +86,17 @@ export default function App() {
         const match = url.match(/tapmood:\/\/record\?mood=(bad|okay|good)/);
         if (match) {
           const mood = match[1] as MoodLevel;
+          // 检查今天是否已记录心情（小组件点击时防止重复记录）
+          const todayMood = await moodDB.getTodayMood();
+          if (todayMood) {
+            Alert.alert('提示', '今天已记录心情，如需修改请在应用内操作');
+            return;
+          }
           await moodDB.recordMood(mood);
           await updateMoodWidget();
           setActiveTab('home');
           const moodLabel = mood === 'bad' ? '差' : mood === 'okay' ? '中' : '好';
-          Alert.alert('已记录', `今天心情：${moodLabel}`);
+          Alert.alert('记录成功', `今天心情：${moodLabel}`);
         }
       } catch (e) {
         Alert.alert('记录失败', '请稍后重试');
