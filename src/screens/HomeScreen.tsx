@@ -4,7 +4,7 @@ import { StatusBar } from 'expo-status-bar';
 import type { MoodLevel, CalendarView } from '../types';
 import { COLORS, SPACING, FONT_SIZE } from '../constants';
 import { useTodayMood, useMoodRange } from '../hooks/useMood';
-import { initDatabase, getStreak } from '../database/moodDB';
+import { getStreak } from '../database/moodDB';
 import { getWeekRange, getMonthRange, getYearRange, getMonthName, formatDate, getDaysInMonth } from '../utils/dateUtils';
 import MoodSelector from '../components/MoodSelector';
 import TodayStatus from '../components/TodayStatus';
@@ -38,7 +38,7 @@ export default function HomeScreen() {
 
   useEffect(() => {
     (async () => {
-      await initDatabase();
+      // 数据库已在 App.tsx 中初始化，这里直接标记就绪并加载连续打卡
       setDbReady(true);
       const s = await getStreak();
       setStreak(s);
