@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import type { MoodRecord, MoodLevel, MoodStats } from '../types';
 import * as moodDB from '../database/moodDB';
 import { getToday } from '../utils/dateUtils';
@@ -8,6 +8,7 @@ export function useTodayMood() {
   const [mood, setMood] = useState<MoodRecord | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const recordingRef = useRef(false);
 
   const refresh = useCallback(async () => {
     try {
@@ -24,6 +25,9 @@ export function useTodayMood() {
   useEffect(() => { refresh(); }, [refresh]);
 
   const recordMood = useCallback(async (level: MoodLevel) => {
+    // 防止快速重复点击
+    if (recordingRef.current) return;
+    recordingRef.current = true;
     try {
       setError(null);
       const record = await moodDB.recordMood(level);
@@ -32,8 +36,10 @@ export function useTodayMood() {
     } catch (e) {
       setError('记录心情失败');
       throw e;
+    } finally {
+      recordingRef.current = false;
     }
-  }, []);
+  }, [setMood]);
 
   return { mood, loading, error, recordMood, refresh };
 }

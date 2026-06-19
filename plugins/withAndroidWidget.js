@@ -246,13 +246,14 @@ const WIDGET_LAYOUT_2x1 = `<?xml version="1.0" encoding="utf-8"?>
 // ============================================================
 const WIDGET_INFO = `<?xml version="1.0" encoding="utf-8"?>
 <appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
+    android:label="@string/widget_label"
     android:description="@string/widget_description"
     android:initialLayout="@layout/mood_widget_4x1"
     android:previewLayout="@layout/mood_widget_4x1"
-    android:minWidth="276dp" android:minHeight="102dp"
-    android:minResizeWidth="130dp" android:minResizeHeight="102dp"
-    android:maxResizeWidth="349dp" android:maxResizeHeight="102dp"
-    android:resizeMode="horizontal"
+    android:minWidth="276dp" android:minHeight="40dp"
+    android:minResizeWidth="130dp" android:minResizeHeight="40dp"
+    android:maxResizeWidth="349dp" android:maxResizeHeight="180dp"
+    android:resizeMode="horizontal|vertical"
     android:targetCellWidth="4" android:targetCellHeight="1"
     android:updatePeriodMillis="1800000"
     android:widgetCategory="home_screen" />`;
@@ -357,7 +358,8 @@ const DRAWABLE_BG_100_V31 = `<?xml version="1.0" encoding="utf-8"?><shape xmlns:
 
 // ============================================================
 const STRINGS_XML = `<?xml version="1.0" encoding="utf-8"?><resources>
-<string name="widget_description">一点心情 - 快速记录心情</string>
+<string name="widget_label">一点心情</string>
+<string name="widget_description">快速记录今天的心情</string>
 </resources>`;
 
 // ============================================================
