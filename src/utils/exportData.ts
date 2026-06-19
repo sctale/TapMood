@@ -22,9 +22,10 @@ export async function exportMoodDataAsCSV(): Promise<{ success: boolean; count: 
 
     const csvContent = '\uFEFF' + header + rows;
 
-    // 写入临时文件（使用新版expo-file-system的File API）
+    // 使用新版expo-file-system的File API写入临时文件
     const fileName = `tapmood_export_${getDateStr()}.csv`;
     const file = new File(Paths.cache, fileName);
+    file.create({ intermediates: true, overwrite: true });
     file.write(csvContent);
 
     // 调用系统分享

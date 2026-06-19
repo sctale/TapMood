@@ -2,7 +2,7 @@
   "expo": {
     "name": "一点心情",
     "slug": "TapMood",
-    "version": "0.2.6",
+    "version": "0.2.7",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
@@ -33,19 +33,6 @@
         {
           "icon": "./assets/icon.png",
           "color": "#81C784"
-        }
-      ],
-      [
-        "expo-widgets",
-        {
-          "widgets": [
-            {
-              "name": "MoodWidget",
-              "displayName": "一点心情",
-              "description": "快速记录今天的心情",
-              "supportedFamilies": ["systemSmall", "systemMedium"]
-            }
-          ]
         }
       ],
       "./plugins/withAndroidWidget"

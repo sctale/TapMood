@@ -15,35 +15,41 @@ import { setupWidgetInteractionListener, updateMoodWidget } from './src/widgets/
 import * as moodDB from './src/database/moodDB';
 
 // 全局通知处理器：如果今天已记录心情，则不弹提醒
-Notifications.setNotificationHandler({
-  handleNotification: async (notification) => {
-    // 只对心情提醒通知做智能判断
-    if (notification.request.content.data?.type === 'mood_reminder') {
-      try {
-        const todayMood = await moodDB.getTodayMood();
-        if (todayMood) {
-          // 今天已记录心情，静默跳过
-          return {
-            shouldShowAlert: false,
-            shouldPlaySound: false,
-            shouldSetBadge: false,
-            shouldShowBanner: false,
-            shouldShowList: false,
-          };
+// 注意：此代码在模块顶层执行，数据库可能尚未初始化
+// 需要防御性处理，避免 Android 启动时崩溃
+try {
+  Notifications.setNotificationHandler({
+    handleNotification: async (notification) => {
+      // 只对心情提醒通知做智能判断
+      if (notification.request.content.data?.type === 'mood_reminder') {
+        try {
+          const todayMood = await moodDB.getTodayMood();
+          if (todayMood) {
+            // 今天已记录心情，静默跳过
+            return {
+              shouldShowAlert: false,
+              shouldPlaySound: false,
+              shouldSetBadge: false,
+              shouldShowBanner: false,
+              shouldShowList: false,
+            };
+          }
+        } catch {
+          // 数据库未初始化或查询失败，默认显示通知
         }
-      } catch {
-        // 数据库查询失败，默认显示通知
       }
-    }
-    return {
-      shouldShowAlert: true,
-      shouldPlaySound: false,
-      shouldSetBadge: false,
-      shouldShowBanner: true,
-      shouldShowList: true,
-    };
-  },
-});
+      return {
+        shouldShowAlert: true,
+        shouldPlaySound: false,
+        shouldSetBadge: false,
+        shouldShowBanner: true,
+        shouldShowList: true,
+      };
+    },
+  });
+} catch {
+  // Android 上 expo-notifications 原生模块可能尚未就绪，静默忽略
+}
 
 type TabKey = 'home' | 'analysis' | 'settings';
 
@@ -55,10 +61,13 @@ export default function App() {
     (async () => {
       try {
         await moodDB.initDatabase();
-        await updateMoodWidget();
       } catch (e) {
-        // 初始化失败时提示用户
-        Alert.alert('初始化失败', '应用数据初始化失败，请重启应用');
+        // 数据库初始化失败不崩溃，用户仍可使用基本功能
+      }
+      try {
+        await updateMoodWidget();
+      } catch {
+        // 小组件更新失败不影响主流程
       }
     })();
   }, []);
