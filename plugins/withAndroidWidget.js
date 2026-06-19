@@ -378,7 +378,7 @@ const WIDGET_LAYOUT_2x1 = `<?xml version="1.0" encoding="utf-8"?>
 // ============================================================
 const WIDGET_INFO = `<?xml version="1.0" encoding="utf-8"?>
 <appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
-    android:label="@string/widget_label"
+    android:label="一点心情"
     android:description="@string/widget_description"
     android:configure="com.tapmood.app.WidgetConfigActivity"
     android:widgetFeatures="reconfigurable"

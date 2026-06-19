@@ -2,7 +2,7 @@
 // 此文件提供 JS 侧的接口，用于写入状态文件供原生小组件读取
 
 import * as FileSystem from 'expo-file-system';
-import * as SQLite from 'expo-sqlite';
+import * as moodDB from '../database/moodDB';
 
 const STATE_FILE = FileSystem.documentDirectory + 'widget_state.json';
 const CONFIG_FILE = FileSystem.documentDirectory + 'widget_config.json';
@@ -10,14 +10,9 @@ const CONFIG_FILE = FileSystem.documentDirectory + 'widget_config.json';
 // 更新小组件状态文件（今天的心情记录）
 export async function updateMoodWidget() {
   try {
-    const db = await SQLite.openDatabaseAsync('tapmood.db');
+    const record = await moodDB.getTodayMood();
     const today = new Date();
     const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
-
-    const record = await db.getFirstAsync<{ mood: string }>(
-      'SELECT mood FROM mood_records WHERE date = ?',
-      [todayStr]
-    );
 
     await FileSystem.writeAsStringAsync(
       STATE_FILE,

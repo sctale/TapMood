@@ -1,5 +1,14 @@
 # 更新日志
 
+## [0.3.6] - 2026-06-19
+
+### 修复
+- 修复小组件在三星 One UI 8.5 上不显示名称的问题（label 改为直接字符串值）
+- 修复多次切换心情（包括小组件点击）后软件内心情失效报错的问题
+  - 消除 MoodWidget.android.tsx 独立打开数据库连接导致的并发冲突
+  - App.tsx handleUrl 改为通过 DeviceEventEmitter 与 HomeScreen 协作
+  - 统一所有心情记录路径通过 useMood hook 的防重复机制
+
 ## [0.3.5] - 2026-06-19
 
 ### 修复
