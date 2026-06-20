@@ -25,6 +25,7 @@
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
+      "./plugins/withVersionSync",
       "expo-sqlite",
       "expo-router",
       "expo-status-bar",
