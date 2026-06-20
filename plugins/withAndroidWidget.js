@@ -1,18 +1,18 @@
 /**
  * Expo Config Plugin：自动注入 Android 桌面小组件原生代码
  *
- * 遵循 Android 12+ (API 31+) 小组件设计规范：
- * - 使用 targetCellWidth/Height 指定默认格子数
- * - 同时设置 minWidth/minHeight 兼容 Android 11 及以下
- * - 使用 minResizeWidth/Height + maxResizeWidth/Height 限制可调整范围
- * - 添加 previewLayout 实现 Android 12+ 选择器实时预览
- * - 使用系统标准圆角 (@android:dimen/system_app_widget_background_radius)
- * - 采用响应式布局 RemoteViews(Map<SizeF, RemoteViews>) 适配不同尺寸
+ * 设计目标：
+ * - 小组件高度严格为 1 行，与桌面图标高度一致
+ * - 小组件内仅显示 3 个可点击心情图标
+ * - 应用名称“一点心情”由桌面启动器通过 android:label 显示在小组件下方
+ * - 支持水平调整宽度，垂直高度保持 1 行不变
  *
- * 尺寸标准（5x4 网格手机，来源：Android 官方文档）：
- *   1x1 = 57x102dp   2x1 = 130x102dp   3x1 = 203x102dp
- *   4x1 = 276x102dp   5x1 = 349x102dp
- *   公式：(73n - 16) x (118m - 16)
+ * 遵循 Android 12+ (API 31+) 小组件设计规范：
+ * - targetCellWidth="4" targetCellHeight="1" 指定默认 4x1
+ * - minHeight/minResizeHeight/maxResizeHeight 统一为 48dp，锁定 1 行高度
+ * - resizeMode="horizontal" 仅允许水平调整
+ * - previewLayout 实现 Android 12+ 选择器实时预览
+ * - 使用系统标准圆角 (@android:dimen/system_app_widget_background_radius)
  */
 const {
   withDangerousMod,
@@ -65,10 +65,8 @@ const JAVA_UTILS = `
 `;
 
 // ============================================================
-// 单个响应式小组件 Java（Android 12+ 最佳实践）
-// 默认 4x1，可水平调整到 2x1~5x1
-// Android 12+ 使用 RemoteViews(Map<SizeF, RemoteViews>) 响应式布局
-// Android 11 及以下使用默认 4x1 布局
+// 单个 1 行小组件 Java
+// 布局内仅包含 3 个可点击心情图标，名称由桌面启动器通过 android:label 显示
 // ============================================================
 const WIDGET_JAVA = `package com.tapmood.app;
 
@@ -77,12 +75,8 @@ import android.appwidget.AppWidgetManager;
 import android.appwidget.AppWidgetProvider;
 import android.content.Context;
 import android.content.Intent;
-import android.os.Build;
-import android.util.SizeF;
 import android.widget.RemoteViews;
 import android.widget.Toast;
-import java.util.Map;
-import android.util.ArrayMap;
 
 public class MoodWidget extends AppWidgetProvider {
     private static final String ACTION_MOOD_BAD = "com.tapmood.app.MOOD_BAD";
@@ -92,41 +86,17 @@ public class MoodWidget extends AppWidgetProvider {
     @Override
     public void onUpdate(Context context, AppWidgetManager appWidgetManager, int[] appWidgetIds) {
         for (int appWidgetId : appWidgetIds) {
-            RemoteViews views;
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                // Android 12+：响应式布局，根据尺寸自动切换
-                RemoteViews wideView = new RemoteViews(context.getPackageName(), R.layout.mood_widget_4x1);
-                setupWideViewClicks(context, wideView);
-                applyBackground(context, wideView);
-
-                RemoteViews narrowView = new RemoteViews(context.getPackageName(), R.layout.mood_widget_2x1);
-                setupNarrowViewClicks(context, narrowView);
-                applyBackground(context, narrowView);
-
-                Map<SizeF, RemoteViews> viewMapping = new ArrayMap<>();
-                viewMapping.put(new SizeF(130f, 102f), narrowView);
-                viewMapping.put(new SizeF(276f, 102f), wideView);
-                views = new RemoteViews(viewMapping);
-            } else {
-                // Android 11 及以下：使用 4x1 默认布局
-                views = new RemoteViews(context.getPackageName(), R.layout.mood_widget_4x1);
-                setupWideViewClicks(context, views);
-                applyBackground(context, views);
-            }
+            RemoteViews views = new RemoteViews(context.getPackageName(), R.layout.mood_widget);
+            setupClicks(context, views);
+            applyBackground(context, views);
             appWidgetManager.updateAppWidget(appWidgetId, views);
         }
     }
 
-    private void setupWideViewClicks(Context context, RemoteViews views) {
+    private void setupClicks(Context context, RemoteViews views) {
         views.setOnClickPendingIntent(R.id.btn_bad, getMoodPendingIntent(context, ACTION_MOOD_BAD, 1));
         views.setOnClickPendingIntent(R.id.btn_okay, getMoodPendingIntent(context, ACTION_MOOD_OKAY, 2));
         views.setOnClickPendingIntent(R.id.btn_good, getMoodPendingIntent(context, ACTION_MOOD_GOOD, 3));
-    }
-
-    private void setupNarrowViewClicks(Context context, RemoteViews views) {
-        views.setOnClickPendingIntent(R.id.btn_bad, getMoodPendingIntent(context, ACTION_MOOD_BAD, 4));
-        views.setOnClickPendingIntent(R.id.btn_okay, getMoodPendingIntent(context, ACTION_MOOD_OKAY, 5));
-        views.setOnClickPendingIntent(R.id.btn_good, getMoodPendingIntent(context, ACTION_MOOD_GOOD, 6));
     }
 
     @Override
@@ -281,7 +251,7 @@ public class WidgetConfigActivity extends Activity {
 
     private void updateWidget() {
         AppWidgetManager appWidgetManager = AppWidgetManager.getInstance(this);
-        RemoteViews views = new RemoteViews(getPackageName(), R.layout.mood_widget_4x1);
+        RemoteViews views = new RemoteViews(getPackageName(), R.layout.mood_widget);
         // 应用背景
         int[] bgResIds = { R.drawable.widget_bg_0, R.drawable.widget_bg_25, R.drawable.widget_bg_50, R.drawable.widget_bg_75, R.drawable.widget_bg_100 };
         int level = getBgAlphaLevel();
@@ -294,78 +264,44 @@ public class WidgetConfigActivity extends Activity {
 `;
 
 // ============================================================
-// 4x1 宽版布局：三个极简图标按钮（无内部标题，标题由桌面启动器在小组件下方显示）
+// 小组件布局：仅三个可点击心情图标，无内部标题
+// 高度固定为 1 行，宽度随桌面网格自动分配
 // ============================================================
-const WIDGET_LAYOUT_4x1 = `<?xml version="1.0" encoding="utf-8"?>
+const WIDGET_LAYOUT = `<?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/widget_root"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="horizontal"
     android:background="@drawable/widget_bg_75"
-    android:paddingStart="12dp"
-    android:paddingEnd="12dp"
-    android:paddingTop="6dp"
-    android:paddingBottom="6dp"
+    android:paddingStart="10dp"
+    android:paddingEnd="10dp"
+    android:paddingTop="4dp"
+    android:paddingBottom="4dp"
     android:gravity="center_vertical">
 
     <ImageView android:id="@+id/btn_bad" android:layout_width="0dp"
         android:layout_height="match_parent" android:layout_weight="1"
         android:src="@drawable/ic_mood_bad" android:scaleType="centerInside"
-        android:background="@drawable/widget_btn_bad" android:layout_margin="4dp"
+        android:background="@drawable/widget_btn_bad" android:layout_margin="3dp"
         android:contentDescription="差" />
 
     <ImageView android:id="@+id/btn_okay" android:layout_width="0dp"
         android:layout_height="match_parent" android:layout_weight="1"
         android:src="@drawable/ic_mood_okay" android:scaleType="centerInside"
-        android:background="@drawable/widget_btn_okay" android:layout_margin="4dp"
+        android:background="@drawable/widget_btn_okay" android:layout_margin="3dp"
         android:contentDescription="中" />
 
     <ImageView android:id="@+id/btn_good" android:layout_width="0dp"
         android:layout_height="match_parent" android:layout_weight="1"
         android:src="@drawable/ic_mood_good" android:scaleType="centerInside"
-        android:background="@drawable/widget_btn_good" android:layout_margin="4dp"
+        android:background="@drawable/widget_btn_good" android:layout_margin="3dp"
         android:contentDescription="好" />
 </LinearLayout>`;
 
 // ============================================================
-// 2x1 窄版布局：三个极简图标按钮（紧凑）
-// ============================================================
-const WIDGET_LAYOUT_2x1 = `<?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:id="@+id/widget_root"
-    android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:orientation="horizontal"
-    android:background="@drawable/widget_bg_75"
-    android:paddingStart="8dp"
-    android:paddingEnd="8dp"
-    android:paddingTop="6dp"
-    android:paddingBottom="6dp"
-    android:gravity="center_vertical">
-
-    <ImageView android:id="@+id/btn_bad" android:layout_width="0dp"
-        android:layout_height="match_parent" android:layout_weight="1"
-        android:src="@drawable/ic_mood_bad" android:scaleType="centerInside"
-        android:background="@drawable/widget_btn_bad" android:layout_margin="2dp"
-        android:contentDescription="差" />
-
-    <ImageView android:id="@+id/btn_okay" android:layout_width="0dp"
-        android:layout_height="match_parent" android:layout_weight="1"
-        android:src="@drawable/ic_mood_okay" android:scaleType="centerInside"
-        android:background="@drawable/widget_btn_okay" android:layout_margin="2dp"
-        android:contentDescription="中" />
-
-    <ImageView android:id="@+id/btn_good" android:layout_width="0dp"
-        android:layout_height="match_parent" android:layout_weight="1"
-        android:src="@drawable/ic_mood_good" android:scaleType="centerInside"
-        android:background="@drawable/widget_btn_good" android:layout_margin="2dp"
-        android:contentDescription="好" />
-</LinearLayout>`;
-
-// ============================================================
-// 小组件配置 XML（遵循 Android 12+ 尺寸标准）
-// 单个响应式小组件：默认 4x1，可调整到 2x1~5x1
+// 小组件配置 XML（遵循 Android 12+ / One UI 8.5 标准）
+// 默认 4x1，高度锁定为 1 行，仅允许水平调整宽度
 // ============================================================
 const WIDGET_INFO = `<?xml version="1.0" encoding="utf-8"?>
 <appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
@@ -373,12 +309,12 @@ const WIDGET_INFO = `<?xml version="1.0" encoding="utf-8"?>
     android:description="@string/widget_description"
     android:configure="com.tapmood.app.WidgetConfigActivity"
     android:widgetFeatures="reconfigurable"
-    android:initialLayout="@layout/mood_widget_4x1"
-    android:previewLayout="@layout/mood_widget_4x1"
-    android:minWidth="276dp" android:minHeight="40dp"
-    android:minResizeWidth="130dp" android:minResizeHeight="40dp"
-    android:maxResizeWidth="349dp" android:maxResizeHeight="180dp"
-    android:resizeMode="horizontal|vertical"
+    android:initialLayout="@layout/mood_widget"
+    android:previewLayout="@layout/mood_widget"
+    android:minWidth="276dp" android:minHeight="48dp"
+    android:minResizeWidth="130dp" android:minResizeHeight="48dp"
+    android:maxResizeWidth="349dp" android:maxResizeHeight="48dp"
+    android:resizeMode="horizontal"
     android:targetCellWidth="4" android:targetCellHeight="1"
     android:updatePeriodMillis="1800000"
     android:widgetCategory="home_screen" />`;
@@ -566,8 +502,7 @@ function withAndroidWidget(config) {
     writeFile(javaDir, 'WidgetConfigActivity.java', WIDGET_CONFIG_JAVA);
 
     // 布局
-    writeFile(path.join(resDir, 'layout'), 'mood_widget_4x1.xml', WIDGET_LAYOUT_4x1);
-    writeFile(path.join(resDir, 'layout'), 'mood_widget_2x1.xml', WIDGET_LAYOUT_2x1);
+    writeFile(path.join(resDir, 'layout'), 'mood_widget.xml', WIDGET_LAYOUT);
 
     // 小组件配置
     writeFile(path.join(resDir, 'xml'), 'mood_widget_info.xml', WIDGET_INFO);
@@ -603,9 +538,10 @@ function withAndroidWidget(config) {
       widget_description: '快速记录今天的心情',
     });
 
-    // 清理旧文件
+    // 清理旧文件（只删不再使用的旧文件，不要删除当前正在写入的文件）
     [
-      path.join(resDir, 'layout', 'mood_widget.xml'),
+      path.join(resDir, 'layout', 'mood_widget_4x1.xml'),
+      path.join(resDir, 'layout', 'mood_widget_2x1.xml'),
       path.join(resDir, 'xml', 'mood_widget_info_4x1.xml'),
       path.join(resDir, 'xml', 'mood_widget_info_2x1.xml'),
       path.join(resDir, 'drawable', 'widget_dot.xml'),
