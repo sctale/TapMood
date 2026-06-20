@@ -5,6 +5,7 @@ import { MOOD_CONFIG, MOOD_LEVELS, COLORS, SPACING, FONT_SIZE } from '../constan
 import { getMoodByDate, recordMoodForDate, deleteMoodByDate } from '../database/moodDB';
 import { updateMoodWidget } from '../widgets/MoodWidget';
 import { parseDate, formatDate } from '../utils/dateUtils';
+import MoodIcon from './MoodIcon';
 
 interface DateMoodModalProps {
   visible: boolean;
@@ -100,7 +101,7 @@ export default function DateMoodModal({ visible, date, onClose, onRecorded }: Da
           {/* 当前心情显示 */}
           {currentMood && (
             <View style={[styles.currentMoodBar, { backgroundColor: MOOD_CONFIG[currentMood].color }]}>
-              <Text style={styles.currentMoodEmoji}>{MOOD_CONFIG[currentMood].emoji}</Text>
+              <MoodIcon mood={currentMood} size={24} />
               <Text style={styles.currentMoodLabel}>心情：{MOOD_CONFIG[currentMood].label}</Text>
             </View>
           )}
@@ -122,7 +123,7 @@ export default function DateMoodModal({ visible, date, onClose, onRecorded }: Da
                     disabled={loading}
                     activeOpacity={0.7}
                   >
-                    <Text style={styles.moodEmoji}>{config.emoji}</Text>
+                    <MoodIcon mood={level} size={32} isSelected={isSelected} />
                     <Text style={[styles.moodText, { color: isSelected ? COLORS.surface : config.color }]}>
                       {config.label}
                     </Text>
@@ -187,9 +188,6 @@ const styles = StyleSheet.create({
     marginBottom: SPACING.md,
     gap: SPACING.sm,
   },
-  currentMoodEmoji: {
-    fontSize: 24,
-  },
   currentMoodLabel: {
     fontSize: FONT_SIZE.md,
     color: COLORS.surface,
@@ -210,9 +208,6 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.surface,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  moodEmoji: {
-    fontSize: 32,
   },
   moodText: {
     fontSize: FONT_SIZE.sm,

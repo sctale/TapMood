@@ -6,6 +6,7 @@ import { COLORS, SPACING, FONT_SIZE } from '../constants';
 import type { NotificationSettings } from '../types';
 import { getNotificationSettings, saveNotificationSettings, getTotalRecordCount } from '../database/moodDB';
 import { exportMoodDataAsCSV } from '../utils/exportData';
+import TimeWheelPicker from '../components/TimeWheelPicker';
 
 // 注意：setNotificationHandler 已移至 App.tsx 全局设置（支持智能跳过已记录的提醒）
 
@@ -210,50 +211,16 @@ export default function SettingsScreen() {
                 <Text style={styles.pickerClose}>完成</Text>
               </TouchableOpacity>
             </View>
-            <Text style={styles.pickerHint}>选择小时</Text>
-            <ScrollView style={styles.hourGrid} showsVerticalScrollIndicator={false}>
-              <View style={styles.hourGridInner}>
-                {Array.from({ length: 24 }, (_, h) => (
-                  <TouchableOpacity
-                    key={h}
-                    style={[
-                      styles.hourBtn,
-                      pickerHour === h && styles.hourBtnActive,
-                    ]}
-                    onPress={() => setPickerHour(h)}
-                  >
-                    <Text style={[
-                      styles.hourBtnText,
-                      pickerHour === h && styles.hourBtnTextActive,
-                    ]}>
-                      {String(h).padStart(2, '0')}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-            </ScrollView>
-            <Text style={styles.pickerHint}>选择分钟</Text>
-            <ScrollView style={styles.minuteGrid} showsVerticalScrollIndicator={false}>
-              <View style={styles.minuteGridInner}>
-                {Array.from({ length: 60 }, (_, m) => (
-                  <TouchableOpacity
-                    key={m}
-                    style={[
-                      styles.minuteBtn,
-                      pickerMinute === m && styles.hourBtnActive,
-                    ]}
-                    onPress={() => setPickerMinute(m)}
-                  >
-                    <Text style={[
-                      styles.hourBtnText,
-                      pickerMinute === m && styles.hourBtnTextActive,
-                    ]}>
-                      {String(m).padStart(2, '0')}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-            </ScrollView>
+            <View style={styles.wheelPickerWrap}>
+              <TimeWheelPicker
+                hour={pickerHour}
+                minute={pickerMinute}
+                onChange={(h, m) => {
+                  setPickerHour(h);
+                  setPickerMinute(m);
+                }}
+              />
+            </View>
           </Pressable>
         </Pressable>
       </Modal>
@@ -374,53 +341,8 @@ const styles = StyleSheet.create({
     color: COLORS.accent,
     fontWeight: '600',
   },
-  pickerHint: {
-    fontSize: FONT_SIZE.xs,
-    color: COLORS.textSecondary,
-    marginBottom: SPACING.md,
-  },
-  hourGrid: {
-    maxHeight: 300,
-  },
-  hourGridInner: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
-  },
-  hourBtn: {
-    width: '23%',
-    paddingVertical: SPACING.md,
-    borderRadius: 12,
-    backgroundColor: COLORS.background,
+  wheelPickerWrap: {
     alignItems: 'center',
-    marginBottom: SPACING.sm,
-  },
-  hourBtnActive: {
-    backgroundColor: COLORS.accent,
-  },
-  hourBtnText: {
-    fontSize: FONT_SIZE.sm,
-    color: COLORS.text,
-    fontWeight: '500',
-  },
-  hourBtnTextActive: {
-    color: COLORS.surface,
-    fontWeight: '700',
-  },
-  minuteGrid: {
-    maxHeight: 220,
-  },
-  minuteGridInner: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
-  },
-  minuteBtn: {
-    width: '15%',
-    paddingVertical: SPACING.sm,
-    borderRadius: 12,
-    backgroundColor: COLORS.background,
-    alignItems: 'center',
-    marginBottom: SPACING.sm,
+    marginTop: SPACING.sm,
   },
 });

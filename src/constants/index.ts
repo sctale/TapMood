@@ -2,28 +2,25 @@ import type { MoodLevel } from '../types';
 
 // 心情等级配置（参考 Daylio/Headspace 柔和色系）
 export const MOOD_CONFIG: Record<MoodLevel, {
-  label: string; color: string; gradientStart: string; gradientEnd: string; emoji: string;
+  label: string; color: string; gradientStart: string; gradientEnd: string;
 }> = {
   bad: {
     label: '差',
     color: '#7986CB',         // 柔和靛蓝
     gradientStart: '#9FA8DA', // 浅靛蓝
     gradientEnd: '#5C6BC0',   // 深靛蓝
-    emoji: '😔',
   },
   okay: {
     label: '中',
     color: '#FFB74D',         // 温暖琥珀
     gradientStart: '#FFCC80', // 浅琥珀
     gradientEnd: '#FFA726',   // 深琥珀
-    emoji: '😐',
   },
   good: {
     label: '好',
     color: '#81C784',         // 柔和薄荷绿
     gradientStart: '#A5D6A7', // 浅绿
     gradientEnd: '#66BB6A',   // 深绿
-    emoji: '😊',
   },
 };
 

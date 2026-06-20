@@ -39,6 +39,9 @@ yarn-error.*
 # generated bundles
 test.bundle
 
+# IDE / agent specs
+.trae/
+
 # generated native folders
 /ios
 /android

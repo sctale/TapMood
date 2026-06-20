@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import type { MoodLevel } from '../types';
 import { MOOD_CONFIG, COLORS, SPACING, FONT_SIZE } from '../constants';
+import MoodIcon from './MoodIcon';
 
 interface TodayStatusProps {
   mood: MoodLevel | null;
@@ -41,7 +42,7 @@ export default React.memo(function TodayStatus({ mood, streak = 0 }: TodayStatus
   return (
     <View style={styles.container}>
       <Text style={styles.greeting}>{greeting}</Text>
-      <Text style={styles.emoji}>{config.emoji}</Text>
+      <MoodIcon mood={mood} size={52} />
       <Text style={[styles.statusText, { color: config.color }]}>
         今天心情：{config.label}
       </Text>
@@ -72,11 +73,6 @@ const styles = StyleSheet.create({
     color: COLORS.text,
     fontWeight: '300',
     letterSpacing: 1,
-  },
-  emoji: {
-    fontSize: 52,
-    marginBottom: SPACING.sm,
-    marginTop: SPACING.xs,
   },
   statusText: {
     fontSize: FONT_SIZE.lg,

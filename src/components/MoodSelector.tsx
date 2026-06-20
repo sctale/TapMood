@@ -2,6 +2,7 @@ import React, { useRef, useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Animated, Easing } from 'react-native';
 import type { MoodLevel } from '../types';
 import { MOOD_CONFIG, MOOD_LEVELS, COLORS, SPACING, FONT_SIZE } from '../constants';
+import MoodIcon from './MoodIcon';
 
 interface MoodSelectorProps {
   onMoodSelect: (mood: MoodLevel) => void;
@@ -57,9 +58,7 @@ export default React.memo(function MoodSelector({ onMoodSelect, selectedMood, si
               }}
               activeOpacity={0.85}
             >
-              <Text style={[styles.moodEmoji, isLarge ? styles.moodEmojiLarge : styles.moodEmojiSmall]}>
-                {config.emoji}
-              </Text>
+              <MoodIcon mood={level} size={isLarge ? 44 : 30} isSelected={isSelected} />
               <Text style={[
                 styles.moodLabel,
                 isLarge ? styles.moodLabelLarge : styles.moodLabelSmall,
@@ -100,15 +99,6 @@ const styles = StyleSheet.create({
     width: 76,
     height: 92,
     paddingVertical: SPACING.sm,
-  },
-  moodEmoji: {
-    textAlign: 'center',
-  },
-  moodEmojiLarge: {
-    fontSize: 44,
-  },
-  moodEmojiSmall: {
-    fontSize: 30,
   },
   moodLabel: {
     fontWeight: '600',
