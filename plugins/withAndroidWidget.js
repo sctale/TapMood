@@ -121,9 +121,6 @@ public class MoodWidget extends AppWidgetProvider {
         views.setOnClickPendingIntent(R.id.btn_bad, getMoodPendingIntent(context, ACTION_MOOD_BAD, 1));
         views.setOnClickPendingIntent(R.id.btn_okay, getMoodPendingIntent(context, ACTION_MOOD_OKAY, 2));
         views.setOnClickPendingIntent(R.id.btn_good, getMoodPendingIntent(context, ACTION_MOOD_GOOD, 3));
-        Intent openApp = new Intent(context, MainActivity.class);
-        views.setOnClickPendingIntent(R.id.widget_title,
-            PendingIntent.getActivity(context, 0, openApp, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE));
     }
 
     private void setupNarrowViewClicks(Context context, RemoteViews views) {
@@ -297,7 +294,7 @@ public class WidgetConfigActivity extends Activity {
 `;
 
 // ============================================================
-// 4x1 宽版布局：标题 + 三个极简图标按钮
+// 4x1 宽版布局：三个极简图标按钮（无内部标题，标题由桌面启动器在小组件下方显示）
 // ============================================================
 const WIDGET_LAYOUT_4x1 = `<?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
@@ -308,32 +305,26 @@ const WIDGET_LAYOUT_4x1 = `<?xml version="1.0" encoding="utf-8"?>
     android:background="@drawable/widget_bg_75"
     android:paddingStart="12dp"
     android:paddingEnd="12dp"
-    android:paddingTop="8dp"
-    android:paddingBottom="8dp"
+    android:paddingTop="6dp"
+    android:paddingBottom="6dp"
     android:gravity="center_vertical">
-
-    <TextView android:id="@+id/widget_title"
-        android:layout_width="wrap_content" android:layout_height="wrap_content"
-        android:text="一点心情" android:textSize="13sp" android:textColor="#666666"
-        android:textStyle="bold" android:layout_marginEnd="12dp"
-        android:maxLines="1" android:ellipsize="end" />
 
     <ImageView android:id="@+id/btn_bad" android:layout_width="0dp"
         android:layout_height="match_parent" android:layout_weight="1"
         android:src="@drawable/ic_mood_bad" android:scaleType="centerInside"
-        android:background="@drawable/widget_btn_bad" android:layout_margin="3dp"
+        android:background="@drawable/widget_btn_bad" android:layout_margin="4dp"
         android:contentDescription="差" />
 
     <ImageView android:id="@+id/btn_okay" android:layout_width="0dp"
         android:layout_height="match_parent" android:layout_weight="1"
         android:src="@drawable/ic_mood_okay" android:scaleType="centerInside"
-        android:background="@drawable/widget_btn_okay" android:layout_margin="3dp"
+        android:background="@drawable/widget_btn_okay" android:layout_margin="4dp"
         android:contentDescription="中" />
 
     <ImageView android:id="@+id/btn_good" android:layout_width="0dp"
         android:layout_height="match_parent" android:layout_weight="1"
         android:src="@drawable/ic_mood_good" android:scaleType="centerInside"
-        android:background="@drawable/widget_btn_good" android:layout_margin="3dp"
+        android:background="@drawable/widget_btn_good" android:layout_margin="4dp"
         android:contentDescription="好" />
 </LinearLayout>`;
 
