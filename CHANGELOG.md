@@ -1,5 +1,15 @@
 # 更新日志
 
+## [0.3.12] - 2026-06-20
+
+### 修复
+- 修复设置页提醒时间滚轮上下拨动卡顿 / 二次跳动问题
+  - 删除双事件磁吸（onScrollEndDrag + onMomentumScrollEnd），仅依赖 RN 内置 snap 系统
+  - 修正 useEffect → scrollToOffset 循环链路，受控 value 变化单向同步
+  - 新增 syncingRef / currentIndexRef 阻止链式刷新
+  - 修正磁吸算法，适配 snapToAlignment='start' + paddingVertical 组合
+  - 性能参数对齐：getItemLayout / windowSize=5 / removeClippedSubviews / initialNumToRender / maxToRenderPerBatch
+
 ## [0.3.11] - 2026-06-20
 
 ### 优化
