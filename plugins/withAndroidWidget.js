@@ -605,10 +605,8 @@ function withAndroidWidget(config) {
     writeFile(path.join(resDir, 'drawable-v31'), 'widget_bg_75.xml', DRAWABLE_BG_75_V31);
     writeFile(path.join(resDir, 'drawable-v31'), 'widget_bg_100.xml', DRAWABLE_BG_100_V31);
 
-    // 字符串
-    writeFile(path.join(resDir, 'values'), 'strings_widget.xml', STRINGS_XML);
-
-    // 同时把小组件字符串合并到主 strings.xml，避免部分厂商/AAPT 无法读取独立 strings 文件
+    // 把小组件字符串合并到主 strings.xml，避免部分厂商/AAPT 无法读取独立 strings 文件
+    // 同时防止 strings_widget.xml 与 strings.xml 重复定义导致 Duplicate resources
     mergeStringsXml(path.join(resDir, 'values', 'strings.xml'), {
       widget_label: '一点心情',
       widget_description: '快速记录今天的心情',
@@ -621,6 +619,7 @@ function withAndroidWidget(config) {
       path.join(resDir, 'xml', 'mood_widget_info_2x1.xml'),
       path.join(resDir, 'drawable', 'widget_dot.xml'),
       path.join(resDir, 'drawable', 'widget_background.xml'),
+      path.join(resDir, 'values', 'strings_widget.xml'),
       path.join(javaDir, 'MoodWidgetProvider.java'),
       path.join(javaDir, 'MoodWidget4x1.java'),
       path.join(javaDir, 'MoodWidget2x1.java'),
