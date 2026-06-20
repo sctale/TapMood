@@ -20,6 +20,7 @@ npx expo prebuild --platform android
 - 首次构建或修改了 Config Plugin（`plugins/` 目录）时必须执行
 - 如果 `android/` 目录被锁定（EBUSY），先关闭占用进程再重试
 - **不要使用 `--clean`**，除非明确需要完全重建（会触发 EBUSY 问题）
+- 修改 `plugins/` 下任意 config plugin 后必须 prebuild 一次
 
 ### 2. 构建 Release APK
 
@@ -28,51 +29,68 @@ cd d:\V-Coding\TapMood\android
 .\gradlew assembleRelease
 ```
 
-- 构建时间约 1-2 分钟（增量构建）/ 8-15 分钟（全量构建）
+- 增量构建：约 1-2 分钟
+- 全量构建（含 native cxx 重编）：约 8-15 分钟
 - APK 输出路径：`android\app\build\outputs\apk\release\app-release.apk`
 - **不需要手动处理 hermesc.exe**，标准流程会自动处理
 
-### 3. 验证构建结果
+### 3. 验证构建结果（强制步骤，**不可跳过**）
 
 ```powershell
-# 确认 APK 文件存在且大小合理
+# 1) 确认 APK 文件存在
 Get-Item d:\V-Coding\TapMood\android\app\build\outputs\apk\release\app-release.apk
+
+# 2) 读取 APK 包元数据，验证版本号正确
+& "$env:LOCALAPPDATA\Android\Sdk\build-tools\<version>\aapt.exe" dump badging d:\V-Coding\TapMood\android\app\build\outputs\apk\release\app-release.apk | Select-String "package"
 ```
+
+**必须确认**：
+- `versionName` 与 `app.json.expo.version` 一致
+- `versionCode` 是 `major*10000 + minor*100 + patch` 派生值（例：0.3.12 → 312）
+- 如果不对：**必须修复后重新构建**，不能直接发布
+
+> 版本号由 [`plugins/withVersionSync.js`](plugins/withVersionSync.js) 自动从 `app.json.expo.version` 派生。详见下文"自动版本号同步"。
+
+---
+
+## 自动版本号同步
+
+**单一数据源：`app.json.expo.version`**
+
+`expo-build-properties` 在 expo 56 中**不支持** `versionName` / `versionCode` 字段（schema 与源码都没处理）。本项目通过自定义 config plugin 解决：
+
+- `versionName` 由 **expo prebuild 模板**自动从 `app.json.expo.version` 读取
+- `versionCode` 由 [`plugins/withVersionSync.js`](plugins/withVersionSync.js) 用 `withAppBuildGradle` 自动派生
+  - 派生公式：`major * 10000 + minor * 100 + patch`
+  - 例：`0.3.12` → `312`，`0.4.0` → `400`，`1.0.0` → `10000`
+
+### Release 前版本号自检
+
+只需确认 `app.json.expo.version` 已更新到目标版本。**不要手动改** `android/app/build.gradle`（被 .gitignore 排除），所有版本号都从 `app.json` 派生。
 
 ---
 
 ## 版本发布流程
 
-每次发布新版本必须完成以下所有步骤：
+每次发布新版本必须完成以下所有步骤。
 
-### 1. 更新版本号
+### 1. 构建前检查清单
 
-三个文件必须同步更新：
-- `app.json` → `expo.version`
-- `package.json` → `version`
-- `README.md` → "当前版本" 行
+- [ ] `app.json` → `expo.version` 已更新
+- [ ] `package.json` → `version` 与 `app.json` 一致
+- [ ] `README.md` → "当前版本" 行已同步
+- [ ] `CHANGELOG.md` → 顶部已添加新版本记录
+- [ ] `android/app/src/main/res/values/strings.xml` 含小组件字符串（`widget_label` / `widget_description`）
+- [ ] 无重复的 strings XML 文件（避免 `mergeReleaseResources` Duplicate resources）
+- [ ] `aapt dump badging` 已验证 APK 元数据正确
 
-版本号规则：
+### 2. 版本号规则
+
 - 新功能 → 次版本号 +1（0.3.0 → 0.4.0）
 - Bug 修复 → 修订号 +1（0.3.0 → 0.3.1）
 - 破坏性更新 → 主版本号 +1
 
-### 2. 更新 CHANGELOG.md
-
-在文件顶部添加新版本记录：
-```markdown
-## [x.y.z] - YYYY-MM-DD
-
-### 新增/修复/优化
-- 变更说明
-```
-
-### 3. 更新 README.md
-
-- 功能描述是否需要更新
-- 版本号是否已同步
-
-### 4. Git 提交
+### 3. Git 提交
 
 ```powershell
 cd d:\V-Coding\TapMood
@@ -81,30 +99,82 @@ git commit -m "feat/fix/docs: 中文描述"
 ```
 
 - commit message 格式：`feat:` / `fix:` / `docs:` + 中文描述
-- 不要 `git add .`，逐个添加文件避免误提交
+- **不要 `git add .`**，逐个添加文件避免误提交
+- PowerShell 不支持 HEREDOC，commit message 写一行
 
-### 5. 推送到 GitHub
+### 4. 推送到 GitHub
 
 ```powershell
 git push origin main
 ```
 
-### 6. 创建 GitHub Release
+`android/` 目录在 `.gitignore` 中被排除（`/android`），因此 build.gradle 修改不会进版本控制——**这正是为什么必须用 config plugin 而不是手动改 build.gradle**。
 
-> 安全提示：请不要将 GitHub Token 硬编码到文件中。执行前请先通过以下任一方式完成认证：
-> - 运行 `gh auth login` 进行交互式登录
-> - 在本地环境变量中设置 `GH_TOKEN`，例如 `$env:GH_TOKEN="<你的_token>"`
+### 5. 创建 GitHub Release
+
+**推荐：通过 Trae GitHub MCP 工具创建**（不需任何 token）。
+
+如果 MCP 工具未配置或不可用，使用 `gh` CLI（需 OAuth 登录）：
 
 ```powershell
+# 一次性 OAuth 登录（推荐）
+& "C:\Program Files\GitHub CLI\gh.exe" auth login --hostname github.com --git-protocol https --web
+
+# 创建 release 并上传 APK
 & "C:\Program Files\GitHub CLI\gh.exe" release create v<版本号> `
-  "d:\V-Coding\TapMood\android\app\build\outputs\apk\release\app-release.apk" `
+  "d:\V-Coding\TapMood\android\app\build\outputs\apk\release\app-release.apk#TapMood-v<版本号>.apk" `
   --repo sctale/TapMood `
   --title "v<版本号>" `
-  --notes "## v<版本号> - 简短说明`n`n### 修复/新增/优化`n- 变更说明"
+  --notes "<release notes>"
 ```
 
-- 注意：使用 `& "C:\Program Files\GitHub CLI\gh.exe"` 而非 `gh`（系统 PATH 中的 gh 可能是错误的）
-- APK 必须上传到 Release
+- 使用 `& "C:\Program Files\GitHub CLI\gh.exe"` 而非 `gh`（系统 PATH 中的 gh 可能指向错误脚本）
+- APK **必须**上传到 Release（用 `#别名` 语法指定下载显示名）
+
+### 6. 覆盖已发布 release 的 APK（修正版本号后）
+
+如果已发版但 APK 版本号错误，用 `gh release upload --clobber` 覆盖（**不要再发新 tag**）：
+
+```powershell
+& "C:\Program Files\GitHub CLI\gh.exe" release upload v<版本号> `
+  d:\V-Coding\TapMood\android\app\build\outputs\apk\release\app-release.apk#TapMood-v<版本号>.apk `
+  --repo sctale/TapMood --clobber
+```
+
+---
+
+## GitHub 工具链（按推荐度排序）
+
+### 1. Trae GitHub MCP 工具（推荐，0 token）
+
+Trae IDE 已内置 GitHub MCP Server，**无需任何 token 即可使用**：
+
+- `list_commits` / `get_file_contents` / `search_*` — 读操作
+- `create_or_update_file` / `push_files` — 推代码（可替代 `git push`）
+- `create_branch` / `create_pull_request` / `merge_pull_request` — PR 流程
+- `create_issue` / `update_issue` / `add_issue_comment` — Issue 管理
+
+**限制**：当前 MCP Server **不暴露** `create_release` 和 `upload_release_asset`，所以创建/覆盖 Release 仍需走 `gh` CLI。
+
+### 2. `gh` CLI OAuth 登录（推荐，0 token）
+
+```powershell
+& "C:\Program Files\GitHub CLI\gh.exe" auth login --hostname github.com --git-protocol https --web
+```
+
+- 浏览器 OAuth 一次，本机 `gh` 永久有权限
+- 之后 `gh release create` / `gh release upload` / `git push` 都不需要 token
+- 撤销：`gh auth logout`
+
+### 3. GitHub PAT（不推荐，仅紧急情况）
+
+```powershell
+# 设置临时环境变量（不进 PowerShell 历史）
+$env:GH_TOKEN = "ghp_xxx"
+& "C:\Program Files\GitHub CLI\gh.exe" release create ...
+```
+
+> ⚠️ 不要把 PAT 直接粘到聊天框——会进对话历史，难以清理。优先走 MCP 或 `gh auth login`。
 
 ---
 
@@ -112,6 +182,7 @@ git push origin main
 
 ### 文件位置
 - Config Plugin：`plugins/withAndroidWidget.js`
+- 本项目自定义 config plugin：`plugins/withVersionSync.js`
 - JS 侧接口：`src/widgets/MoodWidget.android.tsx`
 - Deep Link 处理：`App.tsx` 中的 `handleUrl`
 
@@ -136,6 +207,10 @@ git push origin main
 - 原因：Gradle daemon 或其他进程占用 `android/` 目录
 - 解决：关闭占用进程，或直接运行 `npx expo prebuild --platform android`（不加 `--clean`）
 
+### APK 版本号不对
+- 原因：忘了用 [`plugins/withVersionSync.js`](plugins/withVersionSync.js)，或 `app.json.expo.version` 没改
+- 解决：改 `app.json.expo.version` → 重新 `npx expo prebuild` → 重新 `gradlew assembleRelease` → 验证 `aapt dump badging` → 用 `gh release upload --clobber` 覆盖
+
 ### hermesc.exe 缺失
 - 之前遇到过 Windows Defender 删除 hermesc.exe 的问题
 - 当前版本的标准构建流程不再需要手动处理
@@ -148,3 +223,11 @@ git push origin main
 ### gh CLI 路径
 - 正确路径：`C:\Program Files\GitHub CLI\gh.exe`
 - 系统PATH中的 `gh` 可能指向错误的脚本
+
+### PowerShell 执行策略阻断 npx / npm
+- 现象：`PSSecurityException` 或脚本无法运行
+- 解决：用 `powershell -ExecutionPolicy Bypass -Command "..."` 包装
+
+### npx 传 npm 参数失败
+- 不要用 `npx ... -- --npm-flag=...`
+- 直接用 `npm install --xxx` 替代
