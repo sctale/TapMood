@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, Modal, TouchableOpacity, Pressable } from 'react-native';
 import type { MoodLevel } from '../types';
 import { MOOD_CONFIG, MOOD_LEVELS, COLORS, SPACING, FONT_SIZE } from '../constants';
@@ -16,6 +16,7 @@ interface DateMoodModalProps {
 export default function DateMoodModal({ visible, date, onClose, onRecorded }: DateMoodModalProps) {
   const [currentMood, setCurrentMood] = useState<MoodLevel | null>(null);
   const [loading, setLoading] = useState(false);
+  const recordingRef = useRef(false);
 
   // 加载该日期的心情
   useEffect(() => {
@@ -32,8 +33,15 @@ export default function DateMoodModal({ visible, date, onClose, onRecorded }: Da
   }, [visible, date]);
 
   const handleSelect = async (level: MoodLevel) => {
-    if (!date) return;
+    if (!date || recordingRef.current) return;
+    recordingRef.current = true;
     setLoading(true);
+
+    // 安全超时：即使异步操作异常卡住，3秒后自动释放
+    const safetyTimeout = setTimeout(() => {
+      recordingRef.current = false;
+    }, 3000);
+
     try {
       await recordMoodForDate(date, level);
       setCurrentMood(level);
@@ -43,6 +51,8 @@ export default function DateMoodModal({ visible, date, onClose, onRecorded }: Da
     } catch {
       // 失败静默，用户可重试
     } finally {
+      clearTimeout(safetyTimeout);
+      recordingRef.current = false;
       setLoading(false);
     }
   };

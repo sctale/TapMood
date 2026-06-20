@@ -1,5 +1,15 @@
 # 更新日志
 
+## [0.3.8] - 2026-06-20
+
+### 修复
+- 统一 App.tsx 使用 RNPlatform.select 加载 iOS/Android 小组件，避免默认导入 iOS 实现到 Android 包
+- MoodWidget.ios.tsx 不再直接调用 SQLite.openDatabaseAsync，改为复用 moodDB 单例
+- DateMoodModal 增加 recordingRef + 3 秒安全超时，防止重复点击卡死
+- MoodWidget.android.tsx 迁移到新版 expo-file-system File API
+- SettingsScreen 提醒时间支持分钟设置，不再硬编码为 0
+- AnalysisScreen 监听 MOOD_EVENTS.ANALYSIS_FOCUS 与 MOOD_EVENTS.RECORDED，切换标签页和记录后自动刷新统计
+
 ## [0.3.7] - 2026-06-19
 
 ### 修复

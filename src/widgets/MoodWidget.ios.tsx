@@ -1,6 +1,6 @@
 import { createWidget, addUserInteractionListener } from 'expo-widgets';
 import { View, Text } from 'react-native';
-import * as SQLite from 'expo-sqlite';
+import * as moodDB from '../database/moodDB';
 import type { MoodLevel } from '../types';
 
 // 小组件 Props 类型
@@ -98,51 +98,24 @@ export function setupWidgetInteractionListener() {
     const mood = event.target as MoodLevel;
     if (!['bad', 'okay', 'good'].includes(mood)) return;
 
-    // 记录心情到数据库
-    const db = await SQLite.openDatabaseAsync('tapmood.db');
-    const today = new Date();
-    const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+    try {
+      // 通过 moodDB 单例记录心情，避免单独打开数据库连接造成并发隐患
+      await moodDB.recordMood(mood);
 
-    await db.runAsync(
-      `INSERT INTO mood_records (date, mood) VALUES (?, ?)
-       ON CONFLICT(date) DO UPDATE SET mood = ?, created_at = datetime('now', 'localtime')`,
-      [todayStr, mood, mood]
-    );
-
-    // 更新小组件显示
-    await updateMoodWidget();
+      // 更新小组件显示
+      await updateMoodWidget();
+    } catch {
+      // 数据库未初始化或写入失败时静默忽略
+    }
   });
 }
 
 // 更新小组件内容
 export async function updateMoodWidget() {
   try {
-    const db = await SQLite.openDatabaseAsync('tapmood.db');
-    const today = new Date();
-    const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
-
-    // 获取今日心情
-    const record = await db.getFirstAsync<{ mood: string }>(
-      'SELECT mood FROM mood_records WHERE date = ?',
-      [todayStr]
-    );
-
-    // 计算连续打卡天数
-    let streak = 0;
-    const checkDate = new Date(today);
-    while (true) {
-      const dateStr = `${checkDate.getFullYear()}-${String(checkDate.getMonth() + 1).padStart(2, '0')}-${String(checkDate.getDate()).padStart(2, '0')}`;
-      const r = await db.getFirstAsync<{ mood: string }>(
-        'SELECT mood FROM mood_records WHERE date = ?',
-        [dateStr]
-      );
-      if (r) {
-        streak++;
-        checkDate.setDate(checkDate.getDate() - 1);
-      } else {
-        break;
-      }
-    }
+    // 通过 moodDB 单例读取今日心情和连续打卡天数
+    const record = await moodDB.getTodayMood();
+    const streak = await moodDB.getStreak();
 
     moodWidget.updateSnapshot({
       todayMood: record?.mood ?? '',

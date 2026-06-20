@@ -2,7 +2,7 @@ import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, RefreshControl, DeviceEventEmitter } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import type { MoodLevel, CalendarView } from '../types';
-import { COLORS, SPACING, FONT_SIZE } from '../constants';
+import { COLORS, SPACING, FONT_SIZE, MOOD_EVENTS } from '../constants';
 import { useTodayMood, useMoodRange } from '../hooks/useMood';
 import { getStreak } from '../database/moodDB';
 import { getWeekRange, getMonthRange, getYearRange, getMonthName, formatDate, getDaysInMonth } from '../utils/dateUtils';
@@ -65,6 +65,8 @@ export default function HomeScreen() {
       setStreak(s);
       // 更新小组件状态
       await updateMoodWidget();
+      // 通知分析页等需要全局统计的页面刷新
+      DeviceEventEmitter.emit(MOOD_EVENTS.RECORDED);
       showToast('已记录今日心情');
     } catch (e) {
       showToast('记录失败，请重试', 'error');
@@ -90,6 +92,7 @@ export default function HomeScreen() {
     refreshToday();
     const s = await getStreak();
     setStreak(s);
+    DeviceEventEmitter.emit(MOOD_EVENTS.RECORDED);
     showToast('已保存');
   }, [refreshRecords, refreshToday, showToast]);
 

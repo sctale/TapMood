@@ -1,11 +1,11 @@
 // Android 小组件：通过原生 AppWidgetProvider 实现
 // 此文件提供 JS 侧的接口，用于写入状态文件供原生小组件读取
 
-import * as FileSystem from 'expo-file-system';
+import { File, Paths } from 'expo-file-system';
 import * as moodDB from '../database/moodDB';
 
-const STATE_FILE = FileSystem.documentDirectory + 'widget_state.json';
-const CONFIG_FILE = FileSystem.documentDirectory + 'widget_config.json';
+const stateFile = new File(Paths.document, 'widget_state.json');
+const configFile = new File(Paths.document, 'widget_config.json');
 
 // 更新小组件状态文件（今天的心情记录）
 export async function updateMoodWidget() {
@@ -14,10 +14,8 @@ export async function updateMoodWidget() {
     const today = new Date();
     const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
 
-    await FileSystem.writeAsStringAsync(
-      STATE_FILE,
-      JSON.stringify({ date: todayStr, mood: record?.mood ?? '' })
-    );
+    stateFile.create({ intermediates: true, overwrite: true });
+    stateFile.write(JSON.stringify({ date: todayStr, mood: record?.mood ?? '' }));
   } catch {
     // 数据库未初始化时忽略
   }
@@ -27,10 +25,8 @@ export async function updateMoodWidget() {
 // bgAlpha: 0=透明, 1=25%, 2=50%, 3=75%(默认), 4=100%
 export async function updateWidgetConfig(config: { bgAlpha: number }) {
   try {
-    await FileSystem.writeAsStringAsync(
-      CONFIG_FILE,
-      JSON.stringify(config)
-    );
+    configFile.create({ intermediates: true, overwrite: true });
+    configFile.write(JSON.stringify(config));
   } catch {
     // 写入失败静默
   }

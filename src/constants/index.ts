@@ -66,6 +66,12 @@ export const RADIUS = {
   pill: 999, // 胶囊形
 };
 
+// 全局事件名
+export const MOOD_EVENTS = {
+  RECORDED: 'mood:recorded',
+  ANALYSIS_FOCUS: 'analysis:focus',
+} as const;
+
 // 字体大小
 export const FONT_SIZE = {
   xs: 11,

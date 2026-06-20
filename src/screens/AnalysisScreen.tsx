@@ -1,7 +1,7 @@
 import React, { useState, useCallback, useEffect, useMemo } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, DeviceEventEmitter } from 'react-native';
 import type { AnalysisPeriod } from '../types';
-import { COLORS, SPACING, FONT_SIZE } from '../constants';
+import { COLORS, SPACING, FONT_SIZE, MOOD_EVENTS } from '../constants';
 import { useMoodStats } from '../hooks/useMood';
 import { getWeekRange, getMonthRange, getYearRange } from '../utils/dateUtils';
 import { getStreak, getLongestStreak, getTotalRecordCount } from '../database/moodDB';
@@ -31,22 +31,38 @@ export default function AnalysisScreen() {
   const tip = useMemo(() => getMoodTip(stats, period), [stats, period]);
 
   // 加载全局统计（不受周期影响）
-  useEffect(() => {
-    (async () => {
-      try {
-        const [s, l, t] = await Promise.all([
-          getStreak(),
-          getLongestStreak(),
-          getTotalRecordCount(),
-        ]);
-        setStreak(s);
-        setLongestStreak(l);
-        setTotalDays(t);
-      } catch {
-        // 加载失败静默
-      }
-    })();
+  const loadGlobalStats = useCallback(async () => {
+    try {
+      const [s, l, t] = await Promise.all([
+        getStreak(),
+        getLongestStreak(),
+        getTotalRecordCount(),
+      ]);
+      setStreak(s);
+      setLongestStreak(l);
+      setTotalDays(t);
+    } catch {
+      // 加载失败静默
+    }
   }, []);
+
+  useEffect(() => {
+    loadGlobalStats();
+  }, [loadGlobalStats]);
+
+  useEffect(() => {
+    const subscriptions = [
+      DeviceEventEmitter.addListener(MOOD_EVENTS.ANALYSIS_FOCUS, () => {
+        loadGlobalStats();
+      }),
+      DeviceEventEmitter.addListener(MOOD_EVENTS.RECORDED, () => {
+        loadGlobalStats();
+      }),
+    ];
+    return () => {
+      subscriptions.forEach((sub) => sub.remove());
+    };
+  }, [loadGlobalStats]);
 
   const periodTabs: { key: AnalysisPeriod; label: string }[] = [
     { key: 'week', label: '本周' },

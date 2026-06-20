@@ -41,27 +41,40 @@ npx expo start --ios
 src/
 ├── components/     # UI组件
 │   ├── MoodSelector.tsx    # 心情选择器
+│   ├── DateMoodModal.tsx   # 日期心情弹窗（查看/修改/删除某日心情）
 │   ├── TodayStatus.tsx     # 今日状态展示
 │   ├── WeekView.tsx        # 周视图
 │   ├── MonthView.tsx       # 月视图
 │   ├── YearView.tsx        # 年视图
 │   ├── MoodPieChart.tsx    # 饼图
 │   ├── MoodBarChart.tsx    # 柱状图
-│   └── TabBar.tsx          # 底部导航
+│   ├── TabBar.tsx          # 底部导航
+│   └── Toast.tsx           # 轻提示
 ├── screens/        # 页面
 │   ├── HomeScreen.tsx      # 首页（记录+日历）
 │   ├── AnalysisScreen.tsx  # 分析页
 │   └── SettingsScreen.tsx  # 设置页
+├── widgets/        # 桌面小组件
+│   ├── MoodWidget.tsx           # 小组件通用入口与状态更新
+│   ├── MoodWidget.ios.tsx       # iOS 桌面小组件
+│   └── MoodWidget.android.tsx   # Android 桌面小组件（写入状态文件供原生读取）
 ├── database/       # 数据层
 │   └── moodDB.ts           # SQLite CRUD
 ├── hooks/          # 自定义Hooks
 │   └── useMood.ts
 ├── constants/      # 常量配置
+│   └── index.ts
 ├── types/          # 类型定义
+│   └── index.ts
 └── utils/          # 工具函数
-    └── dateUtils.ts
+    ├── dateUtils.ts        # 日期处理
+    ├── exportData.ts       # 数据导出
+    └── moodTips.ts         # 心情建议文案
+
+plugins/
+└── withAndroidWidget.js    # Expo Config Plugin：自动生成 Android 原生桌面小组件代码
 ```
 
 ## 版本
 
-当前版本：0.3.7
+当前版本：0.3.8

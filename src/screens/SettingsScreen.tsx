@@ -12,9 +12,21 @@ import { exportMoodDataAsCSV } from '../utils/exportData';
 export default function SettingsScreen() {
   const [notificationEnabled, setNotificationEnabled] = useState(false);
   const [notificationHour, setNotificationHour] = useState(21);
+  const [notificationMinute, setNotificationMinute] = useState(0);
   const [hasPermission, setHasPermission] = useState(false);
   const [loading, setLoading] = useState(true);
   const [timePickerVisible, setTimePickerVisible] = useState(false);
+  const [pickerHour, setPickerHour] = useState(notificationHour);
+  const [pickerMinute, setPickerMinute] = useState(notificationMinute);
+
+  // 打开时间选择器时同步当前已保存的时间
+  useEffect(() => {
+    if (timePickerVisible) {
+      setPickerHour(notificationHour);
+      setPickerMinute(notificationMinute);
+    }
+  }, [timePickerVisible, notificationHour, notificationMinute]);
+
   const [totalRecords, setTotalRecords] = useState(0);
   const [exporting, setExporting] = useState(false);
 
@@ -25,6 +37,7 @@ export default function SettingsScreen() {
         const settings = await getNotificationSettings();
         setNotificationEnabled(settings.enabled);
         setNotificationHour(settings.hour);
+        setNotificationMinute(settings.minute ?? 0);
         const { status } = await Notifications.getPermissionsAsync();
         setHasPermission(status === 'granted');
         const count = await getTotalRecordCount();
@@ -53,25 +66,26 @@ export default function SettingsScreen() {
           Alert.alert('权限不足', '请在系统设置中允许通知权限');
           return;
         }
-        await scheduleDailyReminder(notificationHour, 0);
+        await scheduleDailyReminder(notificationHour, notificationMinute);
       } else {
         await Notifications.cancelAllScheduledNotificationsAsync();
       }
       setNotificationEnabled(value);
-      await saveNotificationSettings({ enabled: value, hour: notificationHour, minute: 0 });
+      await saveNotificationSettings({ enabled: value, hour: notificationHour, minute: notificationMinute });
     } catch {
       Alert.alert('操作失败', '请稍后重试');
     }
   };
 
   // 选择提醒时间
-  const handleTimeSelect = async (hour: number) => {
+  const handleTimeSelect = async (hour: number, minute: number) => {
     setNotificationHour(hour);
+    setNotificationMinute(minute);
     setTimePickerVisible(false);
     if (notificationEnabled) {
       try {
-        await scheduleDailyReminder(hour, 0);
-        await saveNotificationSettings({ enabled: true, hour, minute: 0 });
+        await scheduleDailyReminder(hour, minute);
+        await saveNotificationSettings({ enabled: true, hour, minute });
       } catch {
         // 调度失败静默处理
       }
@@ -99,7 +113,7 @@ export default function SettingsScreen() {
   const appVersion = Constants.expoConfig?.version ?? '0.0.0';
 
   // 格式化时间显示
-  const timeLabel = `${String(notificationHour).padStart(2, '0')}:00`;
+  const timeLabel = `${String(notificationHour).padStart(2, '0')}:${String(notificationMinute).padStart(2, '0')}`;
 
   // 导出数据
   const handleExport = async () => {
@@ -192,11 +206,11 @@ export default function SettingsScreen() {
           <Pressable style={styles.timePickerModal} onPress={(e) => e.stopPropagation()}>
             <View style={styles.pickerHeader}>
               <Text style={styles.pickerTitle}>选择提醒时间</Text>
-              <TouchableOpacity onPress={() => setTimePickerVisible(false)}>
+              <TouchableOpacity onPress={() => handleTimeSelect(pickerHour, pickerMinute)}>
                 <Text style={styles.pickerClose}>完成</Text>
               </TouchableOpacity>
             </View>
-            <Text style={styles.pickerHint}>选择整点时间</Text>
+            <Text style={styles.pickerHint}>选择小时</Text>
             <ScrollView style={styles.hourGrid} showsVerticalScrollIndicator={false}>
               <View style={styles.hourGridInner}>
                 {Array.from({ length: 24 }, (_, h) => (
@@ -204,15 +218,37 @@ export default function SettingsScreen() {
                     key={h}
                     style={[
                       styles.hourBtn,
-                      notificationHour === h && styles.hourBtnActive,
+                      pickerHour === h && styles.hourBtnActive,
                     ]}
-                    onPress={() => handleTimeSelect(h)}
+                    onPress={() => setPickerHour(h)}
                   >
                     <Text style={[
                       styles.hourBtnText,
-                      notificationHour === h && styles.hourBtnTextActive,
+                      pickerHour === h && styles.hourBtnTextActive,
                     ]}>
-                      {String(h).padStart(2, '0')}:00
+                      {String(h).padStart(2, '0')}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </ScrollView>
+            <Text style={styles.pickerHint}>选择分钟</Text>
+            <ScrollView style={styles.minuteGrid} showsVerticalScrollIndicator={false}>
+              <View style={styles.minuteGridInner}>
+                {Array.from({ length: 60 }, (_, m) => (
+                  <TouchableOpacity
+                    key={m}
+                    style={[
+                      styles.minuteBtn,
+                      pickerMinute === m && styles.hourBtnActive,
+                    ]}
+                    onPress={() => setPickerMinute(m)}
+                  >
+                    <Text style={[
+                      styles.hourBtnText,
+                      pickerMinute === m && styles.hourBtnTextActive,
+                    ]}>
+                      {String(m).padStart(2, '0')}
                     </Text>
                   </TouchableOpacity>
                 ))}
@@ -320,7 +356,7 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     padding: SPACING.lg,
-    maxHeight: '70%',
+    maxHeight: '80%',
   },
   pickerHeader: {
     flexDirection: 'row',
@@ -370,5 +406,21 @@ const styles = StyleSheet.create({
   hourBtnTextActive: {
     color: COLORS.surface,
     fontWeight: '700',
+  },
+  minuteGrid: {
+    maxHeight: 220,
+  },
+  minuteGridInner: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+  },
+  minuteBtn: {
+    width: '15%',
+    paddingVertical: SPACING.sm,
+    borderRadius: 12,
+    backgroundColor: COLORS.background,
+    alignItems: 'center',
+    marginBottom: SPACING.sm,
   },
 });

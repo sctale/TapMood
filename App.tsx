@@ -1,18 +1,28 @@
 import React, { useState, useEffect } from 'react';
 import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, Linking, DeviceEventEmitter } from 'react-native';
+import { StyleSheet, Linking, DeviceEventEmitter, Platform as RNPlatform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as Notifications from 'expo-notifications';
-import { COLORS } from './src/constants';
+import { COLORS, MOOD_EVENTS } from './src/constants';
 import type { MoodLevel } from './src/types';
 import TabBar from './src/components/TabBar';
 import HomeScreen from './src/screens/HomeScreen';
 import AnalysisScreen from './src/screens/AnalysisScreen';
 import SettingsScreen from './src/screens/SettingsScreen';
 
-// 小组件交互监听（平台自动选择 .ios / .android / 通用）
-import { setupWidgetInteractionListener, updateMoodWidget } from './src/widgets/MoodWidget';
 import * as moodDB from './src/database/moodDB';
+
+// 平台特定小组件模块：iOS 使用 MoodWidget.ios.tsx，Android 使用 MoodWidget.android.tsx
+const widgetModule = RNPlatform.select({
+  ios: () => require('./src/widgets/MoodWidget.ios'),
+  android: () => require('./src/widgets/MoodWidget.android'),
+  default: () => require('./src/widgets/MoodWidget'),
+})();
+
+const { setupWidgetInteractionListener, updateMoodWidget } = widgetModule as {
+  setupWidgetInteractionListener: () => { remove: () => void };
+  updateMoodWidget: () => Promise<void>;
+};
 
 // 全局通知处理器：如果今天已记录心情，则不弹提醒
 // 注意：此代码在模块顶层执行，数据库可能尚未初始化
@@ -104,6 +114,13 @@ export default function App() {
 
     return () => subscription.remove();
   }, []);
+
+  // 切换到分析页时触发 focus 事件，通知 AnalysisScreen 刷新全局统计
+  useEffect(() => {
+    if (activeTab === 'analysis') {
+      DeviceEventEmitter.emit(MOOD_EVENTS.ANALYSIS_FOCUS);
+    }
+  }, [activeTab]);
 
   const renderScreen = () => {
     switch (activeTab) {
