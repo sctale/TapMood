@@ -189,6 +189,48 @@ export async function getAllMoodRecords(): Promise<MoodRecord[]> {
   );
 }
 
+// 清空所有心情记录
+export async function clearAllRecords(): Promise<void> {
+  const database = await getDB();
+  await database.runAsync('DELETE FROM mood_records');
+}
+
+// 批量插入/覆盖心情记录（事务，失败时整批回滚）
+// 用于"合并"策略：传入 records，若 date 已存在则覆盖 mood 与 created_at
+export async function bulkInsertRecords(records: MoodRecord[]): Promise<void> {
+  if (records.length === 0) return;
+  const database = await getDB();
+  const now = new Date().toISOString();
+
+  await database.withTransactionAsync(async () => {
+    for (const r of records) {
+      await database.runAsync(
+        `INSERT INTO mood_records (date, mood, created_at) VALUES (?, ?, ?)
+         ON CONFLICT(date) DO UPDATE SET mood = ?, created_at = ?`,
+        [r.date, r.mood, r.created_at || now, r.mood, r.created_at || now]
+      );
+    }
+  });
+}
+
+// 替换全部心情记录（事务：先清空，再插入）
+// 用于"替换"策略：清空 mood_records，再插入传入 records
+export async function replaceAllRecords(records: MoodRecord[]): Promise<void> {
+  const database = await getDB();
+  const now = new Date().toISOString();
+
+  await database.withTransactionAsync(async () => {
+    await database.runAsync('DELETE FROM mood_records');
+    for (const r of records) {
+      await database.runAsync(
+        `INSERT INTO mood_records (date, mood, created_at) VALUES (?, ?, ?)
+         ON CONFLICT(date) DO UPDATE SET mood = ?, created_at = ?`,
+        [r.date, r.mood, r.created_at || now, r.mood, r.created_at || now]
+      );
+    }
+  });
+}
+
 // 读取通知设置
 export async function getNotificationSettings(): Promise<NotificationSettings> {
   const database = await getDB();

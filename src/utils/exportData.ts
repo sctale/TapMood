@@ -1,8 +1,19 @@
 import { File, Paths } from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
-import { getAllMoodRecords } from '../database/moodDB';
+import { getAllMoodRecords, getNotificationSettings } from '../database/moodDB';
 import { MOOD_CONFIG } from '../constants';
-import type { MoodRecord } from '../types';
+import type { MoodRecord, NotificationSettings } from '../types';
+
+// JSON 备份文件格式版本
+const JSON_BACKUP_VERSION = '1';
+
+export interface MoodBackup {
+  version: string;
+  exportedAt: string;
+  count: number;
+  records: MoodRecord[];
+  notificationSettings: NotificationSettings;
+}
 
 // 将心情记录导出为CSV文件并分享
 export async function exportMoodDataAsCSV(): Promise<{ success: boolean; count: number; error?: string }> {
@@ -16,24 +27,57 @@ export async function exportMoodDataAsCSV(): Promise<{ success: boolean; count: 
     const header = '日期,心情,心情标签,记录时间\n';
     const rows = records.map((r: MoodRecord) => {
       const label = MOOD_CONFIG[r.mood].label;
-      // CSV字段用双引号包裹，防止逗号/换行破坏格式
       return `"${r.date}","${r.mood}","${label}","${r.created_at}"`;
     }).join('\n');
 
     const csvContent = '\uFEFF' + header + rows;
 
-    // 使用新版expo-file-system的File API写入临时文件
     const fileName = `tapmood_export_${getDateStr()}.csv`;
     const file = new File(Paths.cache, fileName);
     file.create({ intermediates: true, overwrite: true });
     file.write(csvContent);
 
-    // 调用系统分享
     if (await Sharing.isAvailableAsync()) {
       await Sharing.shareAsync(file.uri, {
         mimeType: 'text/csv',
         dialogTitle: '导出心情数据',
         UTI: 'public.comma-separated-values-text',
+      });
+      return { success: true, count: records.length };
+    }
+    return { success: false, count: records.length, error: '当前设备不支持分享' };
+  } catch (e) {
+    return { success: false, count: 0, error: '导出失败，请重试' };
+  }
+}
+
+// 将心情记录 + 通知设置导出为JSON文件并分享
+export async function exportMoodDataAsJSON(): Promise<{ success: boolean; count: number; error?: string }> {
+  try {
+    const records = await getAllMoodRecords();
+    if (records.length === 0) {
+      return { success: false, count: 0, error: '暂无数据可导出' };
+    }
+
+    const notificationSettings = await getNotificationSettings();
+    const backup: MoodBackup = {
+      version: JSON_BACKUP_VERSION,
+      exportedAt: new Date().toISOString(),
+      count: records.length,
+      records,
+      notificationSettings,
+    };
+
+    const fileName = `tapmood_backup_${getDateStr()}.json`;
+    const file = new File(Paths.cache, fileName);
+    file.create({ intermediates: true, overwrite: true });
+    file.write(JSON.stringify(backup, null, 2));
+
+    if (await Sharing.isAvailableAsync()) {
+      await Sharing.shareAsync(file.uri, {
+        mimeType: 'application/json',
+        dialogTitle: '导出完整备份',
+        UTI: 'public.json',
       });
       return { success: true, count: records.length };
     }

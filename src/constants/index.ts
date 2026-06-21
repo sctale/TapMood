@@ -67,6 +67,7 @@ export const RADIUS = {
 export const MOOD_EVENTS = {
   RECORDED: 'mood:recorded',
   ANALYSIS_FOCUS: 'analysis:focus',
+  DATA_IMPORTED: 'mood:data_imported',
 } as const;
 
 // 字体大小

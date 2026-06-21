@@ -6,6 +6,7 @@ import { useMoodStats } from '../hooks/useMood';
 import { getWeekRange, getMonthRange, getYearRange } from '../utils/dateUtils';
 import { getStreak, getLongestStreak, getTotalRecordCount } from '../database/moodDB';
 import { getMoodTip } from '../utils/moodTips';
+import { generateSummaryText } from '../utils/summaryText';
 import MoodPieChart from '../components/MoodPieChart';
 import MoodBarChart from '../components/MoodBarChart';
 
@@ -70,11 +71,8 @@ export default function AnalysisScreen() {
     { key: 'year', label: '本年' },
   ];
 
-  // 计算最常见心情
-  const mostCommonMood = stats.total > 0
-    ? (stats.good >= stats.okay && stats.good >= stats.bad ? '好'
-      : stats.okay >= stats.bad ? '中' : '差')
-    : '-';
+  // 自然语言摘要
+  const summary = useMemo(() => generateSummaryText(stats, period), [stats, period]);
 
   return (
     <View style={styles.container}>
@@ -163,29 +161,16 @@ export default function AnalysisScreen() {
           </View>
         )}
 
-        {/* 数据摘要 */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>数据摘要</Text>
-          <View style={styles.summaryRow}>
-            <Text style={styles.summaryLabel}>记录天数</Text>
-            <Text style={styles.summaryValue}>{stats.total} 天</Text>
-          </View>
-          <View style={styles.summaryRow}>
-            <Text style={styles.summaryLabel}>最常见心情</Text>
-            <Text style={styles.summaryValue}>{mostCommonMood}</Text>
-          </View>
-          <View style={styles.summaryRow}>
-            <Text style={styles.summaryLabel}>心情好的占比</Text>
-            <Text style={styles.summaryValue}>
-              {stats.total > 0 ? `${Math.round(stats.good / stats.total * 100)}%` : '-'}
+        {/* 数据摘要（自然语言段落） */}
+        <View style={styles.summaryCard}>
+          {summary.segments.map((seg, idx) => (
+            <Text
+              key={idx}
+              style={[styles.summaryText, seg.bold && styles.summaryTextBold]}
+            >
+              {seg.text}
             </Text>
-          </View>
-          <View style={styles.summaryRow}>
-            <Text style={styles.summaryLabel}>心情差的占比</Text>
-            <Text style={styles.summaryValue}>
-              {stats.total > 0 ? `${Math.round(stats.bad / stats.total * 100)}%` : '-'}
-            </Text>
-          </View>
+          ))}
         </View>
       </ScrollView>
     </View>
@@ -292,21 +277,21 @@ const styles = StyleSheet.create({
     color: COLORS.text,
     fontWeight: '600',
   },
-  summaryRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingVertical: SPACING.sm,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: COLORS.border,
+  summaryCard: {
+    backgroundColor: COLORS.surface,
+    marginHorizontal: SPACING.md,
+    marginTop: SPACING.md,
+    borderRadius: 16,
+    padding: SPACING.lg,
   },
-  summaryLabel: {
+  summaryText: {
     fontSize: FONT_SIZE.sm,
     color: COLORS.textSecondary,
+    lineHeight: 22,
   },
-  summaryValue: {
-    fontSize: FONT_SIZE.sm,
+  summaryTextBold: {
     color: COLORS.text,
-    fontWeight: '600',
+    fontWeight: '700',
   },
   emptyState: {
     alignItems: 'center',
