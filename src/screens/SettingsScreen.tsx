@@ -5,7 +5,7 @@ import Constants from 'expo-constants';
 import { COLORS, SPACING, FONT_SIZE } from '../constants';
 import type { NotificationSettings } from '../types';
 import { getNotificationSettings, saveNotificationSettings, getTotalRecordCount } from '../database/moodDB';
-import { exportMoodDataAsCSV, exportMoodDataAsJSON } from '../utils/exportData';
+import { exportMoodData } from '../utils/exportData';
 import { pickAndImportData, type ImportStrategy } from '../utils/importData';
 import TimeWheelPicker from '../components/TimeWheelPicker';
 import Toast from '../components/Toast';
@@ -126,7 +126,7 @@ export default function SettingsScreen() {
   // 格式化时间显示
   const timeLabel = `${String(notificationHour).padStart(2, '0')}:${String(notificationMinute).padStart(2, '0')}`;
 
-  // 导出数据
+  // 导出数据（JSON 格式）
   const handleExport = async () => {
     if (exporting) return;
     if (totalRecords === 0) {
@@ -134,22 +134,7 @@ export default function SettingsScreen() {
       return;
     }
     setExporting(true);
-    const result = await exportMoodDataAsCSV();
-    setExporting(false);
-    if (!result.success) {
-      Alert.alert('导出失败', result.error ?? '请稍后重试');
-    }
-  };
-
-  // 导出 JSON
-  const handleExportJSON = async () => {
-    if (exporting) return;
-    if (totalRecords === 0) {
-      Alert.alert('提示', '暂无数据可导出');
-      return;
-    }
-    setExporting(true);
-    const result = await exportMoodDataAsJSON();
+    const result = await exportMoodData();
     setExporting(false);
     if (!result.success) {
       Alert.alert('导出失败', result.error ?? '请稍后重试');
@@ -278,17 +263,7 @@ export default function SettingsScreen() {
             activeOpacity={0.7}
           >
             <Text style={styles.exportBtnText}>
-              {exporting ? '导出中...' : '导出为CSV'}
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={styles.exportBtn}
-            onPress={handleExportJSON}
-            disabled={exporting || importing || totalRecords === 0}
-            activeOpacity={0.7}
-          >
-            <Text style={styles.exportBtnText}>
-              {exporting ? '导出中...' : '导出为JSON'}
+              {exporting ? '导出中...' : '导出数据'}
             </Text>
           </TouchableOpacity>
           <TouchableOpacity
@@ -302,7 +277,7 @@ export default function SettingsScreen() {
             </Text>
           </TouchableOpacity>
           <Text style={styles.exportHint}>
-            导出 CSV 便于在 Excel/Numbers 打开；JSON 包含通知设置可完整恢复
+            JSON 包含心情记录与通知设置，可完整恢复
           </Text>
         </View>
 

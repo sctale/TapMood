@@ -6,7 +6,6 @@ import { useMoodStats } from '../hooks/useMood';
 import { getWeekRange, getMonthRange, getYearRange } from '../utils/dateUtils';
 import { getStreak, getLongestStreak, getTotalRecordCount } from '../database/moodDB';
 import { getMoodTip } from '../utils/moodTips';
-import { generateSummaryText } from '../utils/summaryText';
 import MoodPieChart from '../components/MoodPieChart';
 import MoodBarChart from '../components/MoodBarChart';
 
@@ -70,9 +69,6 @@ export default function AnalysisScreen() {
     { key: 'month', label: '本月' },
     { key: 'year', label: '本年' },
   ];
-
-  // 自然语言摘要
-  const summary = useMemo(() => generateSummaryText(stats, period), [stats, period]);
 
   return (
     <View style={styles.container}>
@@ -160,18 +156,6 @@ export default function AnalysisScreen() {
             </View>
           </View>
         )}
-
-        {/* 数据摘要（自然语言段落） */}
-        <View style={styles.summaryCard}>
-          {summary.segments.map((seg, idx) => (
-            <Text
-              key={idx}
-              style={[styles.summaryText, seg.bold && styles.summaryTextBold]}
-            >
-              {seg.text}
-            </Text>
-          ))}
-        </View>
       </ScrollView>
     </View>
   );
@@ -276,22 +260,6 @@ const styles = StyleSheet.create({
   toggleTextActive: {
     color: COLORS.text,
     fontWeight: '600',
-  },
-  summaryCard: {
-    backgroundColor: COLORS.surface,
-    marginHorizontal: SPACING.md,
-    marginTop: SPACING.md,
-    borderRadius: 16,
-    padding: SPACING.lg,
-  },
-  summaryText: {
-    fontSize: FONT_SIZE.sm,
-    color: COLORS.textSecondary,
-    lineHeight: 22,
-  },
-  summaryTextBold: {
-    color: COLORS.text,
-    fontWeight: '700',
   },
   emptyState: {
     alignItems: 'center',

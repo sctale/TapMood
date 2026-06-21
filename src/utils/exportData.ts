@@ -1,7 +1,6 @@
 import { File, Paths } from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
 import { getAllMoodRecords, getNotificationSettings } from '../database/moodDB';
-import { MOOD_CONFIG } from '../constants';
 import type { MoodRecord, NotificationSettings } from '../types';
 
 // JSON 备份文件格式版本
@@ -15,44 +14,8 @@ export interface MoodBackup {
   notificationSettings: NotificationSettings;
 }
 
-// 将心情记录导出为CSV文件并分享
-export async function exportMoodDataAsCSV(): Promise<{ success: boolean; count: number; error?: string }> {
-  try {
-    const records = await getAllMoodRecords();
-    if (records.length === 0) {
-      return { success: false, count: 0, error: '暂无数据可导出' };
-    }
-
-    // 构建CSV内容（带BOM头确保Excel正确识别中文）
-    const header = '日期,心情,心情标签,记录时间\n';
-    const rows = records.map((r: MoodRecord) => {
-      const label = MOOD_CONFIG[r.mood].label;
-      return `"${r.date}","${r.mood}","${label}","${r.created_at}"`;
-    }).join('\n');
-
-    const csvContent = '\uFEFF' + header + rows;
-
-    const fileName = `tapmood_export_${getDateStr()}.csv`;
-    const file = new File(Paths.cache, fileName);
-    file.create({ intermediates: true, overwrite: true });
-    file.write(csvContent);
-
-    if (await Sharing.isAvailableAsync()) {
-      await Sharing.shareAsync(file.uri, {
-        mimeType: 'text/csv',
-        dialogTitle: '导出心情数据',
-        UTI: 'public.comma-separated-values-text',
-      });
-      return { success: true, count: records.length };
-    }
-    return { success: false, count: records.length, error: '当前设备不支持分享' };
-  } catch (e) {
-    return { success: false, count: 0, error: '导出失败，请重试' };
-  }
-}
-
-// 将心情记录 + 通知设置导出为JSON文件并分享
-export async function exportMoodDataAsJSON(): Promise<{ success: boolean; count: number; error?: string }> {
+// 导出心情记录 + 通知设置为 JSON 文件并分享
+export async function exportMoodData(): Promise<{ success: boolean; count: number; error?: string }> {
   try {
     const records = await getAllMoodRecords();
     if (records.length === 0) {
@@ -76,7 +39,7 @@ export async function exportMoodDataAsJSON(): Promise<{ success: boolean; count:
     if (await Sharing.isAvailableAsync()) {
       await Sharing.shareAsync(file.uri, {
         mimeType: 'application/json',
-        dialogTitle: '导出完整备份',
+        dialogTitle: '导出数据',
         UTI: 'public.json',
       });
       return { success: true, count: records.length };

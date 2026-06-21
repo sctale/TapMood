@@ -239,10 +239,9 @@ $env:GH_TOKEN = "ghp_xxx"
 - 原因：`Alert.prompt` 是 iOS-only API，Android 直接被忽略
 - 解决：用自定义 `Modal + TextInput` 替代（参考 `SettingsScreen.tsx` 中 `confirmReplaceVisible` 实现）
 
-### 数据备份格式（CSV vs JSON）
-- **CSV 导出**：仅 `mood_records`，适合 Excel/Numbers 打开分析
-- **JSON 导出**：含 `mood_records` + `notificationSettings` + 元数据（version/exportedAt/count），适合跨设备完整恢复
-- **导入**：CSV / JSON 都支持；JSON 会同步恢复通知设置并自动 `cancelAllScheduledNotificationsAsync` 后 reschedule
+### 数据备份格式（JSON）
+- **JSON 导出/导入**：含 `mood_records` + `notificationSettings` + 元数据（version/exportedAt/count），适合跨设备完整恢复
+- 导入后会 `cancelAllScheduledNotificationsAsync` 并 reschedule（如果备份含通知设置）
 
 ### gh CLI 路径
 - 正确路径：`C:\Program Files\GitHub CLI\gh.exe`

@@ -76,30 +76,6 @@ function parseJSONBackup(text: string): { records: MoodRecord[]; notificationSet
   return { records, notificationSettings };
 }
 
-// 解析 CSV 文本（带 BOM）
-// 期望列：日期,心情,心情标签,记录时间（心情标签可忽略）
-function parseCSV(text: string): { records: MoodRecord[]; error?: string } {
-  const cleaned = text.replace(/^\uFEFF/, '');
-  const lines = cleaned.split(/\r?\n/).filter((l) => l.trim().length > 0);
-  if (lines.length === 0) return { records: [], error: 'CSV 为空' };
-
-  // 跳过表头
-  const dataLines = lines.slice(1);
-  const records: MoodRecord[] = [];
-  for (const line of dataLines) {
-    // 简单 CSV 解析：拆分引号包裹字段
-    const fields = line.split(',').map((f) => f.trim().replace(/^"|"$/g, ''));
-    if (fields.length < 2) continue;
-    const date = fields[0];
-    const mood = fields[1] as MoodLevel;
-    const createdAt = fields[3] || new Date().toISOString();
-    if (!DATE_REGEX.test(date)) continue;
-    if (!MOOD_VALUES.includes(mood)) continue;
-    records.push({ id: 0, date, mood, created_at: createdAt });
-  }
-  return { records };
-}
-
 // 重新调度通知（导入新通知设置后）
 async function rescheduleNotification(settings: NotificationSettings): Promise<void> {
   try {
@@ -140,7 +116,7 @@ async function applyImport(
       await saveNotificationSettings(notificationSettings);
       await rescheduleNotification(notificationSettings);
     } else {
-      // JSON 没带 notificationSettings，或者 CSV 导入——取消现有通知
+      // JSON 没带 notificationSettings——取消现有通知
       await Notifications.cancelAllScheduledNotificationsAsync();
     }
 
@@ -163,12 +139,12 @@ async function applyImport(
   }
 }
 
-// 主入口：pick 文件 + 解析 + 导入
+// 主入口：pick 文件 + 解析 + 导入（仅支持 JSON）
 export async function pickAndImportData(strategy: ImportStrategy): Promise<ImportResult> {
   let pickResult;
   try {
     pickResult = await DocumentPicker.getDocumentAsync({
-      type: ['application/json', 'text/csv', 'public.comma-separated-values-text', 'public.json', '*/*'],
+      type: ['application/json', 'public.json'],
       copyToCacheDirectory: true,
     });
   } catch {
@@ -182,11 +158,9 @@ export async function pickAndImportData(strategy: ImportStrategy): Promise<Impor
   const asset = pickResult.assets[0];
   const fileName = asset.name || '';
   const fileUri = asset.uri;
-  const isJson = fileName.toLowerCase().endsWith('.json');
-  const isCsv = fileName.toLowerCase().endsWith('.csv');
 
-  if (!isJson && !isCsv) {
-    return { success: false, imported: 0, skipped: 0, error: '请选择 JSON 或 CSV 文件' };
+  if (!fileName.toLowerCase().endsWith('.json')) {
+    return { success: false, imported: 0, skipped: 0, error: '请选择 JSON 文件' };
   }
 
   let text: string;
@@ -197,24 +171,12 @@ export async function pickAndImportData(strategy: ImportStrategy): Promise<Impor
     return { success: false, imported: 0, skipped: 0, error: '文件读取失败' };
   }
 
-  if (isJson) {
-    const { records, notificationSettings, error } = parseJSONBackup(text);
-    if (error) {
-      return { success: false, imported: 0, skipped: 0, error };
-    }
-    if (records.length === 0) {
-      return { success: false, imported: 0, skipped: 0, error: '备份中无有效记录' };
-    }
-    return applyImport(records, notificationSettings, strategy);
-  }
-
-  // CSV
-  const { records, error } = parseCSV(text);
+  const { records, notificationSettings, error } = parseJSONBackup(text);
   if (error) {
     return { success: false, imported: 0, skipped: 0, error };
   }
   if (records.length === 0) {
-    return { success: false, imported: 0, skipped: 0, error: 'CSV 中无有效记录' };
+    return { success: false, imported: 0, skipped: 0, error: '备份中无有效记录' };
   }
-  return applyImport(records, undefined, strategy);
+  return applyImport(records, notificationSettings, strategy);
 }
