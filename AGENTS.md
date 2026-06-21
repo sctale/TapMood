@@ -82,7 +82,8 @@ Get-Item d:\V-Coding\TapMood\android\app\build\outputs\apk\release\app-release.a
 - [ ] `CHANGELOG.md` → 顶部已添加新版本记录
 - [ ] `android/app/src/main/res/values/strings.xml` 含小组件字符串（`widget_label` / `widget_description`）
 - [ ] 无重复的 strings XML 文件（避免 `mergeReleaseResources` Duplicate resources）
-- [ ] `aapt dump badging` 已验证 APK 元数据正确
+- [ ] 跑了 `npx expo prebuild --platform android --no-install`（**必须**，否则 build.gradle 不会刷新版本号）
+- [ ] `aapt dump badging` 已验证 APK 元数据正确（`versionName` 与 `expo.version` 一致、`versionCode` 是 `major*10000 + minor*100 + patch`）
 
 ### 2. 版本号规则
 
@@ -219,6 +220,28 @@ $env:GH_TOKEN = "ghp_xxx"
 ### PowerShell 不支持 HEREDOC
 - 不要使用 `$(cat <<'EOF' ... EOF)` 语法
 - 使用简单的单行 commit message，或用 `-m` 参数直接写
+
+### gh release notes 含 emoji 导致 PowerShell glob 失败
+- 现象：`gh release create ... --notes "..."` 里出现 `🌱` `✨` `🌧️` 等字符时报 `no matches found`
+- 原因：PowerShell 把 emoji 解释为 glob 模式
+- 解决：把 notes 写入文件，用 `--notes-file <path>` 代替 `--notes`：
+  ```powershell
+  @"
+  ## v0.3.13
+  包含 emoji 🌱 的 notes
+  "@ | Out-File -Encoding utf8 release_notes.md
+  gh release create v0.3.13 ... --notes-file release_notes.md
+  ```
+
+### `Alert.prompt` 仅 iOS 支持
+- 现象：Android 设备上"替换"确认输入框不显示或报错
+- 原因：`Alert.prompt` 是 iOS-only API，Android 直接被忽略
+- 解决：用自定义 `Modal + TextInput` 替代（参考 `SettingsScreen.tsx` 中 `confirmReplaceVisible` 实现）
+
+### 数据备份格式（CSV vs JSON）
+- **CSV 导出**：仅 `mood_records`，适合 Excel/Numbers 打开分析
+- **JSON 导出**：含 `mood_records` + `notificationSettings` + 元数据（version/exportedAt/count），适合跨设备完整恢复
+- **导入**：CSV / JSON 都支持；JSON 会同步恢复通知设置并自动 `cancelAllScheduledNotificationsAsync` 后 reschedule
 
 ### gh CLI 路径
 - 正确路径：`C:\Program Files\GitHub CLI\gh.exe`
