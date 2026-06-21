@@ -66,23 +66,19 @@ export default React.memo(function MonthView({ year, month, records, onDatePress
                 disabled={!onDatePress}
               >
                 <View style={[
-                  styles.todayRing,
-                  isToday && styles.todayRingActive,
+                  styles.moodCircle,
+                  record && { backgroundColor: MOOD_CONFIG[record.mood].color },
+                  !record && !isFuture && { backgroundColor: COLORS.border },
+                  !record && isFuture && { backgroundColor: 'transparent' },
+                  isToday && styles.todayCircle,
                 ]}>
-                  <View style={[
-                    styles.moodCircle,
-                    record && { backgroundColor: MOOD_CONFIG[record.mood].color },
-                    !record && !isFuture && { backgroundColor: COLORS.border },
-                    !record && isFuture && { backgroundColor: 'transparent' },
+                  <Text style={[
+                    styles.dayText,
+                    record ? styles.dayTextRecorded : styles.dayTextEmpty,
+                    isFuture && styles.dayTextFuture,
                   ]}>
-                    <Text style={[
-                      styles.dayText,
-                      record ? styles.dayTextRecorded : styles.dayTextEmpty,
-                      isFuture && styles.dayTextFuture,
-                    ]}>
-                      {day}
-                    </Text>
-                  </View>
+                    {day}
+                  </Text>
                 </View>
               </TouchableOpacity>
             );
@@ -131,16 +127,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  todayRing: {
-    width: 38,
-    height: 38,
-    borderRadius: 14,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 0,
-    borderColor: 'transparent',
-  },
-  todayRingActive: {
+  todayCircle: {
     borderWidth: 2,
     borderColor: COLORS.text,
   },

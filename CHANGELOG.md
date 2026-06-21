@@ -1,14 +1,5 @@
 # 更新日志
 
-## [0.3.17] - 2026-06-20
-
-### 修复
-- **月视图 today 边框不跟随圆角**：在某些 Android 设备上 `borderRadius + border` 组合渲染异常，导致今天格子的边框呈方形（而非圆角矩形），切换包含/不包含今天的月份时方块形状看起来变化
-  - 修复方式：用嵌套 wrapper 结构分离 border 与 backgroundColor
-  - 外层 `todayRing`（38×38, borderRadius:14）：负责 border + borderRadius
-  - 内层 `moodCircle`（34×34, borderRadius:12）：只负责 backgroundColor
-  - today 时外层 `todayRingActive` 激活 border；其他格子外层 borderWidth:0 不可见
-
 ## [0.3.16] - 2026-06-20
 
 ### 优化
