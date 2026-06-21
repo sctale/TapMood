@@ -5,7 +5,7 @@ import type { MoodLevel, CalendarView } from '../types';
 import { COLORS, SPACING, FONT_SIZE, MOOD_EVENTS } from '../constants';
 import { useTodayMood, useMoodRange } from '../hooks/useMood';
 import { getStreak } from '../database/moodDB';
-import { getWeekRange, getMonthRange, getYearRange, getMonthName, formatDate, getDaysInMonth } from '../utils/dateUtils';
+import { getWeekRange, getMonthRange, getYearRange, getMonthName, formatDate, getDaysInMonth, isLeapYear, dayOfYear, isSameISOWeek, getMondayOfWeek } from '../utils/dateUtils';
 import { updateMoodWidget } from '../widgets/MoodWidget';
 import MoodSelector from '../components/MoodSelector';
 import TodayStatus from '../components/TodayStatus';
@@ -128,18 +128,42 @@ export default function HomeScreen() {
     }
   }, [refreshRecords, refreshToday]);
 
-  // 计算月度完成率
-  const monthProgress = useMemo(() => {
+  // 计算周期记录进度（周/月/年通用）
+  const periodProgress = useMemo(() => {
     const now = new Date();
-    const isCurrentMonth = viewDate.getFullYear() === now.getFullYear()
-      && viewDate.getMonth() === now.getMonth();
-    if (!isCurrentMonth) {
-      const totalDays = getDaysInMonth(viewDate.getFullYear(), viewDate.getMonth() + 1);
-      return { recorded: records.length, total: totalDays, percent: totalDays > 0 ? Math.round((records.length / totalDays) * 100) : 0 };
+    let total = 0;
+    let label = '记录';
+
+    if (calendarView === 'week') {
+      label = '本周';
+      if (isSameISOWeek(viewDate, now)) {
+        const monday = getMondayOfWeek(now);
+        const diffMs = now.getTime() - monday.getTime();
+        total = Math.floor(diffMs / 86400000) + 1;
+      } else {
+        total = 7;
+      }
+    } else if (calendarView === 'month') {
+      label = '本月';
+      const isCurrentMonth = viewDate.getFullYear() === now.getFullYear()
+        && viewDate.getMonth() === now.getMonth();
+      if (isCurrentMonth) {
+        total = now.getDate();
+      } else {
+        total = getDaysInMonth(viewDate.getFullYear(), viewDate.getMonth() + 1);
+      }
+    } else {
+      label = '今年';
+      if (viewDate.getFullYear() === now.getFullYear()) {
+        total = dayOfYear(now);
+      } else {
+        total = isLeapYear(viewDate.getFullYear()) ? 366 : 365;
+      }
     }
-    const today = now.getDate();
-    return { recorded: records.length, total: today, percent: today > 0 ? Math.round((records.length / today) * 100) : 0 };
-  }, [records, viewDate]);
+
+    const percent = total > 0 ? Math.round((records.length / total) * 100) : 0;
+    return { recorded: records.length, total, percent, label };
+  }, [calendarView, records, viewDate]);
 
   if (!dbReady) {
     return (
@@ -183,18 +207,16 @@ export default function HomeScreen() {
           <MoodSelector onMoodSelect={handleMoodSelect} selectedMood={todayMood?.mood} />
         </View>
 
-        {/* 月度进度 */}
-        {calendarView === 'month' && (
-          <View style={styles.progressSection}>
-            <View style={styles.progressHeader}>
-              <Text style={styles.progressLabel}>本月记录</Text>
-              <Text style={styles.progressValue}>{monthProgress.recorded}/{monthProgress.total}天</Text>
-            </View>
-            <View style={styles.progressBar}>
-              <View style={[styles.progressFill, { width: `${monthProgress.percent}%` }]} />
-            </View>
+        {/* 周期记录进度（周/月/年通用） */}
+        <View style={styles.progressSection}>
+          <View style={styles.progressHeader}>
+            <Text style={styles.progressLabel}>{periodProgress.label}记录</Text>
+            <Text style={styles.progressValue}>{periodProgress.recorded}/{periodProgress.total}天</Text>
           </View>
-        )}
+          <View style={styles.progressBar}>
+            <View style={[styles.progressFill, { width: `${periodProgress.percent}%` }]} />
+          </View>
+        </View>
 
         {/* 日历视图区域 */}
         <View style={styles.section}>

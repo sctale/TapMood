@@ -1,5 +1,15 @@
 # 更新日志
 
+## [0.3.15] - 2026-06-20
+
+### 新增
+- **记录页周/年视图增加进度统计条**：之前"月度进度"section 只在月视图显示，UX 不一致
+  - 周视图："本周记录 X/Y 天"（Y = 当前周已过天数 或 7）
+  - 月视图："本月记录 X/Y 天"（Y = 本月已过天数 或 当月总天数，逻辑保持）
+  - 年视图："今年记录 X/Y 天"（Y = 今年已过天数 或 365/366）
+  - 重构 `monthProgress` → `periodProgress`，按 `calendarView` 分发计算
+  - 新增 dateUtils 工具：`isLeapYear` / `dayOfYear` / `isSameISOWeek` / `getMondayOfWeek`
+
 ## [0.3.14] - 2026-06-20
 
 ### 移除

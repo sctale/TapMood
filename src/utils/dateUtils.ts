@@ -71,3 +71,36 @@ export function addDays(date: Date, days: number): Date {
   result.setDate(result.getDate() + days);
   return result;
 }
+
+// 判断是否闰年
+export function isLeapYear(year: number): boolean {
+  return (year % 4 === 0 && year % 100 !== 0) || year % 400 === 0;
+}
+
+// 获取日期是当年的第几天（1-366）
+export function dayOfYear(date: Date): number {
+  const start = new Date(date.getFullYear(), 0, 0);
+  const diff = date.getTime() - start.getTime();
+  return Math.floor(diff / 86400000);
+}
+
+// 是否同一 ISO 周（周一为周首）
+export function isSameISOWeek(a: Date, b: Date): boolean {
+  const startOfISOWeek = (d: Date): number => {
+    const day = d.getDay() || 7;
+    const monday = new Date(d);
+    monday.setDate(d.getDate() - (day - 1));
+    monday.setHours(0, 0, 0, 0);
+    return monday.getTime();
+  };
+  return startOfISOWeek(a) === startOfISOWeek(b);
+}
+
+// 获取日期所在 ISO 周的周一日期
+export function getMondayOfWeek(date: Date): Date {
+  const day = date.getDay() || 7;
+  const monday = new Date(date);
+  monday.setDate(date.getDate() - (day - 1));
+  monday.setHours(0, 0, 0, 0);
+  return monday;
+}
