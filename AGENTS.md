@@ -29,8 +29,9 @@ cd d:\V-Coding\TapMood\android
 .\gradlew assembleRelease
 ```
 
-- 增量构建：约 1-2 分钟
-- 全量构建（含 native cxx 重编）：约 8-15 分钟
+- **仅 JS 改动**（上次 build 后只改了 src/，且 prebuild 没动 native）：约 25 秒
+- **Prebuild 增量后**（改了 app.json / plugins，未动 native）：约 30-60 秒
+- **Prebuild `--clean` 后**（首次或大版本切换）：约 3-4 分钟（native 重编译）
 - APK 输出路径：`android\app\build\outputs\apk\release\app-release.apk`
 - **不需要手动处理 hermesc.exe**，标准流程会自动处理
 
@@ -62,7 +63,7 @@ Get-Item d:\V-Coding\TapMood\android\app\build\outputs\apk\release\app-release.a
 - `versionName` 由 **expo prebuild 模板**自动从 `app.json.expo.version` 读取
 - `versionCode` 由 [`plugins/withVersionSync.js`](plugins/withVersionSync.js) 用 `withAppBuildGradle` 自动派生
   - 派生公式：`major * 10000 + minor * 100 + patch`
-  - 例：`0.3.12` → `312`，`0.4.0` → `400`，`1.0.0` → `10000`
+  - 例：`0.3.13` → `313`，`0.4.0` → `400`，`1.0.0` → `10000`
 
 ### Release 前版本号自检
 
@@ -254,3 +255,42 @@ $env:GH_TOKEN = "ghp_xxx"
 ### npx 传 npm 参数失败
 - 不要用 `npx ... -- --npm-flag=...`
 - 直接用 `npm install --xxx` 替代
+
+---
+
+## 快速参考（最常用命令速查）
+
+```powershell
+# ===== 日常开发 =====
+# 启动 dev server
+npx expo start
+
+# ===== Prebuild =====
+# 增量 prebuild（多数情况）
+npx expo prebuild --platform android --no-install
+
+# 完全重建（慎用，会清 cxx 缓存触发 native 重编译）
+npx expo prebuild --platform android --no-install --clean
+
+# ===== Build =====
+# 构建 Release APK
+cd android; .\gradlew assembleRelease
+
+# 构建后必须验证版本号
+& "$env:LOCALAPPDATA\Android\Sdk\build-tools\34.0.0\aapt.exe" dump badging app\build\outputs\apk\release\app-release.apk | Select-String "package"
+
+# ===== Git =====
+git add <files>
+git commit -m "feat/fix/docs: 中文描述"
+git push origin main
+
+# ===== GitHub Release =====
+# 一次性登录（永久有效）
+& "C:\Program Files\GitHub CLI\gh.exe" auth login --hostname github.com --git-protocol https --web
+
+# 创建 release（用 --notes-file 避免 emoji glob 问题）
+gh release create v<版本号> "android\app\build\outputs\apk\release\app-release.apk#TapMood-v<版本号>.apk" --repo sctale/TapMood --title "v<版本号>" --notes-file release_notes.md
+
+# 覆盖已发布 release 的 APK（修正版本号后）
+gh release upload v<版本号> android\app\build\outputs\apk\release\app-release.apk#TapMood-v<版本号>.apk --repo sctale/TapMood --clobber
+```
