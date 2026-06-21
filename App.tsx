@@ -11,6 +11,7 @@ import AnalysisScreen from './src/screens/AnalysisScreen';
 import SettingsScreen from './src/screens/SettingsScreen';
 
 import * as moodDB from './src/database/moodDB';
+import { applyNotificationSettings } from './src/utils/notification';
 
 // 平台特定小组件模块：iOS 使用 MoodWidget.ios.tsx，Android 使用 MoodWidget.android.tsx
 const widgetModule = RNPlatform.select({

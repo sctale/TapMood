@@ -1,5 +1,4 @@
 import * as DocumentPicker from 'expo-document-picker';
-import * as Notifications from 'expo-notifications';
 import { DeviceEventEmitter } from 'react-native';
 import { File } from 'expo-file-system';
 import {
@@ -10,6 +9,7 @@ import {
 import { MOOD_EVENTS } from '../constants';
 import type { MoodLevel, MoodRecord, NotificationSettings } from '../types';
 import type { MoodBackup } from './exportData';
+import { applyNotificationSettings } from './notification';
 
 export type ImportStrategy = 'merge' | 'replace';
 
@@ -77,27 +77,7 @@ function parseJSONBackup(text: string): { records: MoodRecord[]; notificationSet
 }
 
 // 重新调度通知（导入新通知设置后）
-async function rescheduleNotification(settings: NotificationSettings): Promise<void> {
-  try {
-    await Notifications.cancelAllScheduledNotificationsAsync();
-    if (settings.enabled) {
-      await Notifications.scheduleNotificationAsync({
-        content: {
-          title: '记录今天的心情',
-          body: '点击快速记录你的心情吧',
-          data: { type: 'mood_reminder' },
-        },
-        trigger: {
-          type: Notifications.SchedulableTriggerInputTypes.DAILY,
-          hour: settings.hour,
-          minute: settings.minute ?? 0,
-        },
-      });
-    }
-  } catch {
-    // 调度失败不影响导入主流程
-  }
-}
+// 已迁移至 utils/notification.ts 的 applyNotificationSettings
 
 // 导入已解析的记录（执行数据库写入 + 副作用）
 async function applyImport(
@@ -114,10 +94,10 @@ async function applyImport(
 
     if (notificationSettings) {
       await saveNotificationSettings(notificationSettings);
-      await rescheduleNotification(notificationSettings);
+      await applyNotificationSettings(notificationSettings);
     } else {
       // JSON 没带 notificationSettings——取消现有通知
-      await Notifications.cancelAllScheduledNotificationsAsync();
+      await applyNotificationSettings({ enabled: false, hour: 21, minute: 0 });
     }
 
     // 通知 UI 刷新

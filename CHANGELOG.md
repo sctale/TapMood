@@ -1,5 +1,15 @@
 # 更新日志
 
+## [0.3.16] - 2026-06-20
+
+### 优化
+- **通知系统重构**：抽 `src/utils/notification.ts` 单点入口（消除 `SettingsScreen.scheduleDailyReminder` 与 `importData.rescheduleNotification` 重复代码）
+  - `applyNotificationSettings(settings)`：统一的 cancel + schedule + ensureChannel
+  - `cancelTodayReminder()`：取消今日剩余 mood_reminder
+  - `ensureNotificationChannel()`：Android 8+ 显式创建 `mood_reminder` 通道（为未来改 channel 名称/声音留口子）
+- **App 启动时自动恢复通知调度**：解决重装 App / 系统重启后通知消失问题（之前需要手动进设置页开关一次才能恢复）
+- **recordMood 后取消当日提醒**：用户早 8 点记录心情后，21:00 通知不再触发（原本就被 handler 静默，但避免了系统调度开销）
+
 ## [0.3.15] - 2026-06-20
 
 ### 新增

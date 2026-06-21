@@ -6,6 +6,7 @@ import { COLORS, SPACING, FONT_SIZE, MOOD_EVENTS } from '../constants';
 import { useTodayMood, useMoodRange } from '../hooks/useMood';
 import { getStreak } from '../database/moodDB';
 import { getWeekRange, getMonthRange, getYearRange, getMonthName, formatDate, getDaysInMonth, isLeapYear, dayOfYear, isSameISOWeek, getMondayOfWeek } from '../utils/dateUtils';
+import { cancelTodayReminder } from '../utils/notification';
 import { updateMoodWidget } from '../widgets/MoodWidget';
 import MoodSelector from '../components/MoodSelector';
 import TodayStatus from '../components/TodayStatus';
@@ -63,6 +64,8 @@ export default function HomeScreen() {
       refreshToday();
       const s = await getStreak();
       setStreak(s);
+      // 取消今日剩余提醒（用户已记录，无需今晚提醒）
+      await cancelTodayReminder();
       // 更新小组件状态
       await updateMoodWidget();
       // 通知分析页等需要全局统计的页面刷新

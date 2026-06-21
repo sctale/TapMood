@@ -7,6 +7,7 @@ import type { NotificationSettings } from '../types';
 import { getNotificationSettings, saveNotificationSettings, getTotalRecordCount } from '../database/moodDB';
 import { exportMoodData } from '../utils/exportData';
 import { pickAndImportData, type ImportStrategy } from '../utils/importData';
+import { applyNotificationSettings } from '../utils/notification';
 import TimeWheelPicker from '../components/TimeWheelPicker';
 import Toast from '../components/Toast';
 
@@ -77,12 +78,10 @@ export default function SettingsScreen() {
           Alert.alert('权限不足', '请在系统设置中允许通知权限');
           return;
         }
-        await scheduleDailyReminder(notificationHour, notificationMinute);
-      } else {
-        await Notifications.cancelAllScheduledNotificationsAsync();
       }
       setNotificationEnabled(value);
       await saveNotificationSettings({ enabled: value, hour: notificationHour, minute: notificationMinute });
+      await applyNotificationSettings({ enabled: value, hour: notificationHour, minute: notificationMinute });
     } catch {
       Alert.alert('操作失败', '请稍后重试');
     }
@@ -95,29 +94,12 @@ export default function SettingsScreen() {
     setTimePickerVisible(false);
     if (notificationEnabled) {
       try {
-        await scheduleDailyReminder(hour, minute);
         await saveNotificationSettings({ enabled: true, hour, minute });
+        await applyNotificationSettings({ enabled: true, hour, minute });
       } catch {
         // 调度失败静默处理
       }
     }
-  };
-
-  // 设置每日提醒
-  const scheduleDailyReminder = async (hour: number, minute: number) => {
-    await Notifications.cancelAllScheduledNotificationsAsync();
-    await Notifications.scheduleNotificationAsync({
-      content: {
-        title: '记录今天的心情',
-        body: '点击快速记录你的心情吧',
-        data: { type: 'mood_reminder' },
-      },
-      trigger: {
-        type: Notifications.SchedulableTriggerInputTypes.DAILY,
-        hour,
-        minute,
-      },
-    });
   };
 
   // 从 expo-constants 读取版本号，与 package.json/app.json 保持一致
