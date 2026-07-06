@@ -1,20 +1,32 @@
-import React, { useState, useCallback, useEffect, useMemo } from 'react';
+import React, { useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, DeviceEventEmitter } from 'react-native';
 import type { AnalysisPeriod } from '../types';
 import { COLORS, SPACING, FONT_SIZE, MOOD_EVENTS } from '../constants';
-import { useMoodStats } from '../hooks/useMood';
 import { getWeekRange, getMonthRange, getYearRange } from '../utils/dateUtils';
 import { getStreak, getLongestStreak, getTotalRecordCount } from '../database/moodDB';
 import { getMoodTip } from '../utils/moodTips';
 import MoodPieChart from '../components/MoodPieChart';
 import MoodBarChart from '../components/MoodBarChart';
+import MoodTrendChart from '../components/MoodTrendChart';
+import { useMoodStats, useMoodRange } from '../hooks/useMood';
 
 export default function AnalysisScreen() {
   const [period, setPeriod] = useState<AnalysisPeriod>('month');
-  const [chartType, setChartType] = useState<'pie' | 'bar'>('pie');
+  const [chartType, setChartType] = useState<'pie' | 'bar' | 'trend'>('pie');
   const [streak, setStreak] = useState(0);
   const [longestStreak, setLongestStreak] = useState(0);
   const [totalDays, setTotalDays] = useState(0);
+  const scrollRef = useRef<ScrollView>(null);
+
+  // 切换到本 tab 时滚动到顶部
+  useEffect(() => {
+    const sub = DeviceEventEmitter.addListener(MOOD_EVENTS.TAB_FOCUS, ({ tab }: { tab: string }) => {
+      if (tab === 'analysis') {
+        scrollRef.current?.scrollTo({ y: 0, animated: false });
+      }
+    });
+    return () => sub.remove();
+  }, []);
 
   const getDateRange = useCallback(() => {
     switch (period) {
@@ -26,6 +38,8 @@ export default function AnalysisScreen() {
 
   const { start, end } = getDateRange();
   const { stats, loading, error } = useMoodStats(start, end);
+  // 趋势图需要范围内的记录数组
+  const { records: rangeRecords } = useMoodRange(start, end);
 
   // 根据心情比例生成温馨小提示
   const tip = useMemo(() => getMoodTip(stats, period), [stats, period]);
@@ -72,7 +86,7 @@ export default function AnalysisScreen() {
 
   return (
     <View style={styles.container}>
-      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+      <ScrollView ref={scrollRef} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         {/* 周期选择 */}
         <View style={styles.section}>
           <View style={styles.periodTabs}>
@@ -126,6 +140,12 @@ export default function AnalysisScreen() {
               >
                 <Text style={[styles.toggleText, chartType === 'bar' && styles.toggleTextActive]}>柱图</Text>
               </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.toggleBtn, chartType === 'trend' && styles.toggleBtnActive]}
+                onPress={() => setChartType('trend')}
+              >
+                <Text style={[styles.toggleText, chartType === 'trend' && styles.toggleTextActive]}>趋势</Text>
+              </TouchableOpacity>
             </View>
           </View>
 
@@ -141,8 +161,10 @@ export default function AnalysisScreen() {
             </View>
           ) : chartType === 'pie' ? (
             <MoodPieChart stats={stats} />
-          ) : (
+          ) : chartType === 'bar' ? (
             <MoodBarChart stats={stats} />
+          ) : (
+            <MoodTrendChart records={rangeRecords} startDate={start} endDate={end} />
           )}
         </View>
 
@@ -156,6 +178,7 @@ export default function AnalysisScreen() {
             </View>
           </View>
         )}
+
       </ScrollView>
     </View>
   );
@@ -202,7 +225,7 @@ const styles = StyleSheet.create({
   periodTabs: {
     flexDirection: 'row',
     backgroundColor: COLORS.background,
-    borderRadius: 10,
+    borderRadius: 999,
     padding: 3,
   },
   periodTab: {
@@ -241,7 +264,7 @@ const styles = StyleSheet.create({
   chartToggle: {
     flexDirection: 'row',
     backgroundColor: COLORS.background,
-    borderRadius: 8,
+    borderRadius: 999,
     padding: 2,
   },
   toggleBtn: {
@@ -285,7 +308,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.surfaceAlt,
     marginHorizontal: SPACING.md,
     marginTop: SPACING.md,
-    borderRadius: 16,
+    borderRadius: 12,
     padding: SPACING.lg,
   },
   tipEmoji: {

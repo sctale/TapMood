@@ -1,17 +1,19 @@
-import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import React, { useEffect, useRef } from 'react';
+import { View, Text, TouchableOpacity, StyleSheet, Animated } from 'react-native';
 import Svg, { Path, Rect, Circle } from 'react-native-svg';
 import { COLORS, SPACING, FONT_SIZE } from '../constants';
 
+type TabKey = 'home' | 'analysis' | 'settings';
+
 interface TabBarProps {
-  activeTab: 'home' | 'analysis' | 'settings';
-  onTabPress: (tab: 'home' | 'analysis' | 'settings') => void;
+  activeTab: TabKey;
+  onTabPress: (tab: TabKey) => void;
 }
 
-const tabs = [
-  { key: 'home' as const, label: '记录' },
-  { key: 'analysis' as const, label: '分析' },
-  { key: 'settings' as const, label: '设置' },
+const tabs: { key: TabKey; label: string }[] = [
+  { key: 'home', label: '记录' },
+  { key: 'analysis', label: '分析' },
+  { key: 'settings', label: '设置' },
 ];
 
 // 简约图标组件
@@ -45,33 +47,54 @@ function SettingsIcon({ active }: { active: boolean }) {
   );
 }
 
-const icons: Record<string, React.FC<{ active: boolean }>> = {
+const icons: Record<TabKey, React.FC<{ active: boolean }>> = {
   home: HomeIcon,
   analysis: ChartIcon,
   settings: SettingsIcon,
 };
 
+// 单个 Tab 项：激活时图标轻微上移 + 颜色过渡
+function TabItem({ tab, isActive, onPress }: { tab: { key: TabKey; label: string }; isActive: boolean; onPress: () => void }) {
+  const Icon = icons[tab.key];
+  // 上移动画值：激活 -2，未激活 0
+  const translateY = useRef(new Animated.Value(isActive ? -2 : 0)).current;
+
+  useEffect(() => {
+    Animated.spring(translateY, {
+      toValue: isActive ? -2 : 0,
+      useNativeDriver: true,
+      tension: 300,
+      friction: 20,
+    }).start();
+  }, [isActive, translateY]);
+
+  return (
+    <TouchableOpacity
+      style={styles.tab}
+      onPress={onPress}
+      activeOpacity={0.7}
+    >
+      <Animated.View style={{ transform: [{ translateY }] }}>
+        <Icon active={isActive} />
+      </Animated.View>
+      <Text style={[styles.tabLabel, isActive && styles.tabLabelActive]}>
+        {tab.label}
+      </Text>
+    </TouchableOpacity>
+  );
+}
+
 export default React.memo(function TabBar({ activeTab, onTabPress }: TabBarProps) {
   return (
     <View style={styles.container}>
-      {tabs.map((tab) => {
-        const Icon = icons[tab.key];
-        const isActive = activeTab === tab.key;
-
-        return (
-          <TouchableOpacity
-            key={tab.key}
-            style={styles.tab}
-            onPress={() => onTabPress(tab.key)}
-            activeOpacity={0.7}
-          >
-            <Icon active={isActive} />
-            <Text style={[styles.tabLabel, isActive && styles.tabLabelActive]}>
-              {tab.label}
-            </Text>
-          </TouchableOpacity>
-        );
-      })}
+      {tabs.map((tab) => (
+        <TabItem
+          key={tab.key}
+          tab={tab}
+          isActive={activeTab === tab.key}
+          onPress={() => onTabPress(tab.key)}
+        />
+      ))}
     </View>
   );
 });

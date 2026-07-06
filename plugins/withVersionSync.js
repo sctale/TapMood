@@ -21,16 +21,29 @@ module.exports = (config) => {
   const version = config.version;
   if (!version) return config;
 
-  const parts = version.split('.').map((n) => parseInt(n, 10) || 0);
-  const [major, minor, patch] = parts;
+  // 校验版本号格式：必须为 X.Y.Z
+  const match = version.match(/^(\d+)\.(\d+)\.(\d+)$/);
+  if (!match) {
+    throw new Error(
+      `withVersionSync: app.json.expo.version "${version}" 不符合 X.Y.Z 格式`
+    );
+  }
+  const [, majorStr, minorStr, patchStr] = match;
+  const major = parseInt(majorStr, 10);
+  const minor = parseInt(minorStr, 10);
+  const patch = parseInt(patchStr, 10);
   const versionCode = major * 10000 + minor * 100 + patch;
 
   return withAppBuildGradle(config, (config) => {
     let contents = config.modResults.contents;
-    contents = contents.replace(
-      /versionCode \d+/,
-      `versionCode ${versionCode}`
-    );
+    // 匹配 build.gradle 中的 versionCode（兼容 "versionCode 312" 和 "versionCode = 312" 两种写法）
+    const regex = /versionCode\s*=?\s*\d+/;
+    if (!regex.test(contents)) {
+      throw new Error(
+        `withVersionSync: 在 build.gradle 中未找到 versionCode 字段，无法替换`
+      );
+    }
+    contents = contents.replace(regex, `versionCode ${versionCode}`);
     config.modResults.contents = contents;
     return config;
   });

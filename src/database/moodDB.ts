@@ -1,4 +1,5 @@
 import * as SQLite from 'expo-sqlite';
+import { File, Paths } from 'expo-file-system';
 import type { MoodRecord, MoodLevel, MoodStats, NotificationSettings } from '../types';
 import { getToday } from '../utils/dateUtils';
 
@@ -105,9 +106,9 @@ export async function getMoodStats(startDate: string, endDate: string): Promise<
   const database = await getDB();
   const result = await database.getFirstAsync<MoodStats>(
     `SELECT
-      SUM(CASE WHEN mood = 'bad' THEN 1 ELSE 0 END) as bad,
-      SUM(CASE WHEN mood = 'okay' THEN 1 ELSE 0 END) as okay,
-      SUM(CASE WHEN mood = 'good' THEN 1 ELSE 0 END) as good,
+      COALESCE(SUM(CASE WHEN mood = 'bad' THEN 1 ELSE 0 END), 0) as bad,
+      COALESCE(SUM(CASE WHEN mood = 'okay' THEN 1 ELSE 0 END), 0) as okay,
+      COALESCE(SUM(CASE WHEN mood = 'good' THEN 1 ELSE 0 END), 0) as good,
       COUNT(*) as total
     FROM mood_records WHERE date BETWEEN ? AND ?`,
     [startDate, endDate]
@@ -256,4 +257,17 @@ export async function saveNotificationSettings(settings: NotificationSettings): 
      ON CONFLICT(key) DO UPDATE SET value = ?`,
     ['notification_settings', JSON.stringify(settings), JSON.stringify(settings)]
   );
+}
+
+// 获取数据库文件大小（字节）
+export async function getDatabaseSize(): Promise<number> {
+  try {
+    const dbFile = new File(Paths.document, DB_NAME);
+    if (dbFile.exists) {
+      return dbFile.size;
+    }
+  } catch {
+    // 读取失败返回 0
+  }
+  return 0;
 }

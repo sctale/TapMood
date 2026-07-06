@@ -20,12 +20,14 @@ export default function MoodBarChart({ stats, height = 160 }: MoodBarChartProps)
 
   React.useEffect(() => {
     animValue.setValue(0);
-    Animated.timing(animValue, {
+    const anim = Animated.timing(animValue, {
       toValue: 1,
       duration: 600,
       easing: Easing.out(Easing.cubic),
       useNativeDriver: true,
-    }).start();
+    });
+    anim.start();
+    return () => anim.stop();
   }, [stats]);
 
   return (

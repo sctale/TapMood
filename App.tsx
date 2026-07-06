@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, Linking, DeviceEventEmitter, Platform as RNPlatform } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { StyleSheet, Linking, DeviceEventEmitter, Platform as RNPlatform, View, Text } from 'react-native';
+import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import * as Notifications from 'expo-notifications';
+import * as SplashScreen from 'expo-splash-screen';
 import { COLORS, MOOD_EVENTS } from './src/constants';
 import type { MoodLevel } from './src/types';
 import TabBar from './src/components/TabBar';
@@ -10,8 +11,18 @@ import HomeScreen from './src/screens/HomeScreen';
 import AnalysisScreen from './src/screens/AnalysisScreen';
 import SettingsScreen from './src/screens/SettingsScreen';
 
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as moodDB from './src/database/moodDB';
 import { applyNotificationSettings } from './src/utils/notification';
+import OnboardingScreen from './src/screens/OnboardingScreen';
+
+// 首次启动 Onboarding 标记的 AsyncStorage key
+const ONBOARDED_KEY = 'hasOnboarded';
+
+// 阻止原生 Splash 自动隐藏，待数据库初始化完成后手动 hideAsync 实现淡出
+SplashScreen.preventAutoHideAsync().catch(() => {
+  // preventAutoHideAsync 在某些环境下（如 Metro reload）可能已 hide，静默忽略
+});
 
 // 平台特定小组件模块：iOS 使用 MoodWidget.ios.tsx，Android 使用 MoodWidget.android.tsx
 const widgetModule = RNPlatform.select({
@@ -66,22 +77,71 @@ type TabKey = 'home' | 'analysis' | 'settings';
 
 export default function App() {
   const [activeTab, setActiveTab] = useState<TabKey>('home');
+  const [dbError, setDbError] = useState(false);
+  // 已访问过的 tab 集合：首次切换时才挂载，之后保持挂载以保留状态
+  const [visited, setVisited] = useState<Set<TabKey>>(new Set(['home']));
+  // onboarding 状态：null = 加载中，false = 未引导，true = 已引导
+  const [onboarded, setOnboarded] = useState<boolean | null>(null);
+  // appReady = 数据库初始化完成，可以隐藏 Splash
+  const [appReady, setAppReady] = useState(false);
+
+  // 启动时读 onboarding 标记
+  useEffect(() => {
+    (async () => {
+      try {
+        const value = await AsyncStorage.getItem(ONBOARDED_KEY);
+        setOnboarded(value === 'true');
+      } catch {
+        // 读取失败默认已 onboarded，避免卡死
+        setOnboarded(true);
+      }
+    })();
+  }, []);
+
+  // Onboarding 完成回调：写入标记 + 进入主页
+  const handleOnboardingDone = useCallback(async () => {
+    try {
+      await AsyncStorage.setItem(ONBOARDED_KEY, 'true');
+    } catch {
+      // 写入失败静默处理，但仍进入主页
+    }
+    setOnboarded(true);
+  }, []);
 
   // 初始化数据库和小组件
   useEffect(() => {
     (async () => {
       try {
         await moodDB.initDatabase();
+        // 恢复通知调度（cancelTodayReminder 可能已取消 DAILY 计划）
+        try {
+          const settings = await moodDB.getNotificationSettings();
+          await applyNotificationSettings(settings);
+        } catch {
+          // 恢复通知失败不影响主流程
+        }
       } catch (e) {
-        // 数据库初始化失败不崩溃，用户仍可使用基本功能
+        // 数据库初始化失败，显示错误界面
+        setDbError(true);
       }
       try {
         await updateMoodWidget();
       } catch {
         // 小组件更新失败不影响主流程
       }
+      // 数据库与小组件初始化完成，标记 appReady
+      // hideAsync 触发原生 splash 隐藏，并在下方 effect 中执行 fadeMask 淡出
+      setAppReady(true);
     })();
   }, []);
+
+  // appReady 后隐藏原生 splash（原生隐藏自带渐变，无需 JS fadeMask 避免双层闪烁）
+  useEffect(() => {
+    if (!appReady) return;
+    SplashScreen.hideAsync().catch(() => {
+      // hideAsync 失败静默处理
+    });
+  }, [appReady]);
 
   // 监听小组件交互
   useEffect(() => {
@@ -92,12 +152,18 @@ export default function App() {
   // 处理 Deep Link（Android 小组件通过 URL Scheme 传递心情）
   useEffect(() => {
     const handleUrl = async (url: string) => {
-      const match = url.match(/tapmood:\/\/record\?mood=(bad|okay|good)/);
+      // 大小写不敏感匹配，兼容 Android intent 不同大小写
+      const match = url.toLowerCase().match(/tapmood:\/\/record\?mood=(bad|okay|good)/);
       if (match) {
         const mood = match[1] as MoodLevel;
         setActiveTab('home');
-        // 通过全局事件发送，让 HomeScreen 的 useMood hook 处理
+        // 双重保障：emit 事件覆盖监听器已就绪场景；AsyncStorage 暂存兜底监听器未就绪场景
         DeviceEventEmitter.emit('recordMoodFromWidget', { mood });
+        try {
+          await AsyncStorage.setItem('pendingWidgetMood', mood);
+        } catch {
+          // 写入失败静默，emit 事件仍可能生效
+        }
       }
     };
 
@@ -123,22 +189,77 @@ export default function App() {
     }
   }, [activeTab]);
 
-  const renderScreen = () => {
-    switch (activeTab) {
-      case 'home': return <HomeScreen />;
-      case 'analysis': return <AnalysisScreen />;
-      case 'settings': return <SettingsScreen />;
-    }
-  };
+  const handleTabPress = useCallback((tab: TabKey) => {
+    setActiveTab(tab);
+    setVisited((prev) => prev.has(tab) ? prev : new Set(prev).add(tab));
+    // 通知目标页滚动到顶部
+    DeviceEventEmitter.emit(MOOD_EVENTS.TAB_FOCUS, { tab });
+  }, []);
 
-  const handleTabPress = (tab: TabKey) => setActiveTab(tab);
+  // 加载中：onboarded 还没读到，显示极简 loading 避免闪烁
+  if (onboarded === null) {
+    return (
+      <SafeAreaProvider>
+        <SafeAreaView style={[styles.container, styles.loadingWrap]} edges={['top', 'bottom']}>
+          <StatusBar style="dark" />
+          <Text style={styles.loadingText}>...</Text>
+        </SafeAreaView>
+      </SafeAreaProvider>
+    );
+  }
+
+  // 未 onboarded：显示首次启动引导
+  if (!onboarded) {
+    return (
+      <SafeAreaProvider>
+        <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
+          <StatusBar style="dark" />
+          <OnboardingScreen onDone={handleOnboardingDone} />
+        </SafeAreaView>
+      </SafeAreaProvider>
+    );
+  }
+
+  // 数据库初始化失败时显示错误界面
+  if (dbError) {
+    return (
+      <SafeAreaProvider>
+        <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
+          <StatusBar style="dark" />
+          <View style={styles.errorContainer}>
+            <Text style={styles.errorTitle}>数据加载失败</Text>
+            <Text style={styles.errorDesc}>请重启应用，如问题持续请联系开发者</Text>
+          </View>
+        </SafeAreaView>
+      </SafeAreaProvider>
+    );
+  }
 
   return (
-    <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
-      <StatusBar style="dark" />
-      {renderScreen()}
-      <TabBar activeTab={activeTab} onTabPress={handleTabPress} />
-    </SafeAreaView>
+    <SafeAreaProvider>
+      <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
+        <StatusBar style="dark" />
+        {/* 懒挂载 + display:none 保持已访问页面的状态 */}
+        <View style={styles.screenContainer}>
+          {visited.has('home') && (
+            <View style={[styles.screenWrap, activeTab !== 'home' && styles.hidden]}>
+              <HomeScreen />
+            </View>
+          )}
+          {visited.has('analysis') && (
+            <View style={[styles.screenWrap, activeTab !== 'analysis' && styles.hidden]}>
+              <AnalysisScreen />
+            </View>
+          )}
+          {visited.has('settings') && (
+            <View style={[styles.screenWrap, activeTab !== 'settings' && styles.hidden]}>
+              <SettingsScreen />
+            </View>
+          )}
+        </View>
+        <TabBar activeTab={activeTab} onTabPress={handleTabPress} />
+      </SafeAreaView>
+    </SafeAreaProvider>
   );
 }
 
@@ -146,5 +267,40 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: COLORS.background,
+  },
+  screenContainer: {
+    flex: 1,
+  },
+  screenWrap: {
+    flex: 1,
+  },
+  hidden: {
+    display: 'none',
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 32,
+  },
+  errorTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: COLORS.text,
+    marginBottom: 8,
+  },
+  errorDesc: {
+    fontSize: 14,
+    color: COLORS.textSecondary,
+    textAlign: 'center',
+  },
+  loadingWrap: {
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: {
+    fontSize: 16,
+    color: COLORS.textSecondary,
+    letterSpacing: 2,
   },
 });

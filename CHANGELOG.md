@@ -1,5 +1,231 @@
 # 更新日志
 
+## [0.3.39] - 2026-06-27
+
+### 修复
+- **修复小组件点击心情按钮无法记录**：APP 被拉起后无反应（无 Toast、心情未入库）
+  - 根因：App.tsx emit 事件时 HomeScreen 监听器可能未就绪，事件被丢弃
+  - 修复：App.tsx 收到 Deep Link 时同时写入 AsyncStorage `pendingWidgetMood` 兜底
+  - HomeScreen 挂载 + 数据库就绪后从 AsyncStorage 读取并消费 pendingWidgetMood，记录后删除 key
+  - 双重保障：监听器已就绪走事件，未就绪走 AsyncStorage
+
+## [0.3.38] - 2026-06-27
+
+### 优化
+- **移除设置页 GitHub 仓库链接**：删除关于卡片中的「GitHub 仓库」row 及 GithubIcon 组件（普通用户用不到，反馈邮箱保留）
+
+## [0.3.37] - 2026-06-27
+
+### 修复
+- **移除 TabBar 切换振动**：删除 App.tsx 中 `handleTabPress` 的 `hapticSelect()` 调用（v0.3.36 漏改，振动来自 App.tsx 而非 HomeScreen 的视图切换）
+- **切换 Tab 滚动到顶部**：TabBar 切换到目标页时，ScrollView 自动滚动到顶部
+  - 新增 `MOOD_EVENTS.TAB_FOCUS` 事件
+  - `App.handleTabPress` 发送事件携带目标 tab key
+  - 三个 screen 各自监听事件，匹配到自身 key 时调用 `scrollRef.scrollTo({ y: 0, animated: false })`
+
+## [0.3.36] - 2026-06-27
+
+### 优化
+- **触觉反馈精简**：仅保留记录页点击心情按钮时的振动反馈（成功/失败），移除其他所有场景（视图切换、设置开关、导入导出、分享按钮等）的振动
+- **移除分析页回顾模块**：删除 v0.3.35 新增的「本月/本周/本年回顾」section，避免与分析页已有统计信息重复
+- **移除设置页小组件透明度**：删除 v0.3.34 新增的设置页「桌面小组件」卡片，透明度配置保留在小组件本身的配置 Activity 中（长按桌面小组件进入）
+
+## [0.3.35] - 2026-06-27
+
+### 新增
+- **E3 设置页显示数据库大小**：「数据管理」卡片「已记录天数」row 的描述追加数据库文件大小（如 "共 30 天的心情数据 · 12.5 KB"），导入数据后自动刷新
+  - 新增 `moodDB.getDatabaseSize()` 用 `expo-file-system.getInfoAsync` 读取 `tapmood.db` 文件大小
+- **C3 分享今日心情卡**：记录今日心情后，TodayStatus 右上角显示分享按钮
+  - 点击调用 RN `Share.share()` 分享文案："今天我的心情是「好」🌿，已连续记录 X 天。来一起记录心情吧 → TapMood"
+  - 新增 `ShareIcon` 内联 SVG 图标（三圆点 + 连接线）
+  - 无 mood 时不显示分享按钮
+- **C2 趋势折线图**：分析页图表 toggle 新增「趋势」选项
+  - 新增 `MoodTrendChart` 组件：SVG 折线图，X 轴=日期，Y 轴=心情级别（好/中/差）
+  - 数据点颜色对应当日心情，折线用 good 色
+  - 3 条横向虚线参考线 + Y 轴标签
+  - 支持周/月/年三种 period
+- **C1 月度年度回顾报告**：分析页底部新增「回顾」section
+  - 展示：记录天数 / 主要心情 / 好心情占比 / 当前连续 / 最长连续 / 情绪状态
+  - 底部生成自然语言总结文案
+  - 仅在 stats.total > 0 时显示
+
+## [0.3.34] - 2026-06-27
+
+### 新增
+- **C4 小组件背景透明度配置 UI**：设置页新增「桌面小组件」卡片（仅 Android 显示）
+  - 5 档分段选择器：0% / 25% / 50% / 75% / 100%
+  - 选中后调用 `updateWidgetConfig({ bgAlpha })` 写入 `widget_config.json`，原生小组件读取后调整背景透明度
+  - 切换时触发 select + success 触觉反馈
+  - 卡片含 widget icon（okayBg 背景方块）+ 说明文字「长按桌面添加小组件后生效」
+- **C5 关于页链接**：关于卡片新增 2 个链接 row
+  - GitHub 仓库（badBg + GithubIcon）：跳转 `https://github.com/sid/TapMood`
+  - 反馈与建议（goodBg + MailIcon）：跳转 `mailto:feedback@tapmood.app`
+  - 用 `Linking.openURL` + catch 兜底（网络失败/无邮件应用时 Alert 提示）
+- 新增 `WidgetIcon` / `GithubIcon` / `MailIcon` 内联 SVG 图标
+- 新增 `alphaSegment` 分段选择器样式（iOS 风格分段控件，激活态白底 + 阴影）
+- 新增 `linkRow` 样式（row 的语义别名，带顶部分隔线）
+
+## [0.3.33] - 2026-06-27
+
+### 优化
+- **E2 开启 Android 预测性返回手势**：`app.json` 的 `predictiveBackGestureEnabled` 从 `false` 改为 `true`，适配 Android 13+ Material 3 预测性返回手势，Modal/页面返回有动画预览
+- **B4 Tab 切换微动效**：重构 `TabBar.tsx`，新增 `TabItem` 子组件，激活态图标用 `Animated.spring` 轻微上移 2px（tension 300 / friction 20），切 Tab 有弹性反馈
+- **B2 渐变色微动效**：
+  - `MoodSelector` 选中圆点 `selectedDot` 从纯色 `View` 改为 SVG `LinearGradient` 圆点，消费 `MOOD_CONFIG.gradientStart/End`（差=靛蓝渐变 / 中=琥珀渐变 / 好=薄荷绿渐变）
+  - `TodayStatus` 心情图标加弹跳庆祝动效：mood 变化时 scale 1→1.2→1（150ms ease-out + 250ms elastic），记录成功有视觉反馈
+- **E1 gradient 死代码清理**：`gradientStart/End` 已被 `MoodSelector.selectedDot` 消费，不再是死代码，保留字段定义
+
+## [0.3.32] - 2026-06-27
+
+### 优化
+- **Splash 淡出定制**：引入 `expo-splash-screen`，用 `preventAutoHideAsync` 阻止原生 splash 自动隐藏，数据库初始化完成后调用 `hideAsync` 触发原生渐变隐藏，消除冷启动白屏过渡的廉价感
+- 不引入 JS 层 fadeMask，避免双层 splash 闪烁，依赖系统原生隐藏动画（约 200ms 渐变）
+- 新增依赖 `expo-splash-screen@^56.0.10`
+
+## [0.3.31] - 2026-06-27
+
+### 新增
+- **首次启动 Onboarding 引导**：新用户首次打开显示 3 屏极简引导
+  - 第 1 屏：欢迎「一点心情」+ 副标「每天 3 秒，记录你的情绪」
+  - 第 2 屏：玩法「点一下就好」+ 副标「差 / 中 / 好，三档心情一键记录」
+  - 第 3 屏：通知预告「每日提醒」+ 「开始使用」按钮
+  - 横向 pagingEnabled 滑动 + 底部 dots 指示器（可点击跳转）
+  - 通知权限做成"可跳过"：CTA 按下才请求，用户拒绝也能进主页，后续在设置页再开
+- 新增 `src/screens/OnboardingScreen.tsx`
+- 引入 `@react-native-async-storage/async-storage`，用 `hasOnboarded` 标记首次启动
+- App.tsx 启动时读 AsyncStorage：未 onboarded 渲染 Onboarding，已 onboarded 渲染主 Tab 容器；老用户升级后不会重复看到引导
+
+## [0.3.30] - 2026-06-27
+
+### 优化
+- 年视图迷你格子支持点击补记，与周/月视图体验一致；当前年的未来日期禁用点击并以降低透明度区分
+
+## [0.3.29] - 2026-06-27
+
+### 新增
+- 引入 `expo-haptics`，在关键交互场景加轻量触觉反馈：
+  - 记录心情成功 → success 触感
+  - 切换 Tab / 切换日历视图（周/月/年）→ selection 轻触感
+  - 开关通知 / 导出 / 导入成功 → success 触感，失败 → error 触感
+- 新增 `src/utils/haptics.ts` 统一封装 4 种触觉类型（select / light / success / error），失败静默处理
+
+## [0.3.28] - 2026-06-27
+
+### 优化
+- 移除设置页顶部"设置"大标题，与首页/分析页无页面级大标题的风格统一；3 个卡片的 sectionTitle（提醒设置/数据管理/关于）保留作为功能分组标题
+
+## [0.3.27] - 2026-06-27
+
+### 优化
+- 记录页 3 个大心情按钮高度从 128 调整为 104，改善整页视觉匀称度，其他参数（borderRadius / borderWidth / paddingVertical / icon size）保持不变
+
+## [0.3.26] - 2026-06-27
+
+### 优化
+- **设置页按 design 风格重构**（仅视觉，无新功能）
+  - 新增页面顶部"设置"大标题（22 bold，左对齐）
+  - 每个 settings-row 左侧添加 36×36 圆角 icon 方块（按行语义配色：每日提醒 good-bg + 铃铛 / 提醒时间 surfaceAlt + 时钟 / 已记录天数 bad-bg + 数据库）
+  - 同一卡片内多行之间增加 hairline 分隔线
+  - 数据管理导出 / 导入按钮改为横向并排（flex:1 + gap 12），导出 outlined 边框样式 + 导入 filled 实色背景
+  - 关于卡片版本号改为 pill 形式（radius 999 + bgAlt 背景）
+  - 隐私说明改为 row 布局：锁 SVG 图标 + 文字，gap 8
+  - 关于卡片底部新增居中"用 ❤️ 为你打造"情感标语
+  - exportHint 文案改为"JSON 格式包含心情记录与通知设置，可跨设备恢复"
+  - 所有圆角元素设置实色 backgroundColor 避免历史 RN Android 圆角失效问题
+  - 阴影统一使用 elevation + shadow 属性，不使用 CSS box-shadow ring
+
+## [0.3.25] - 2026-06-27
+
+### 修复
+- MoodSelector 大按钮宽度溢出：固定 width:104 改为 flex:1，3 个按钮自适应平分 section 内宽度
+
+## [0.3.24] - 2026-06-27
+
+### 修复
+- 恢复 0.3.21 简洁 UI 风格，撤销 0.3.22/0.3.23 引入的视觉倒退
+- TabBar：移除激活态 pill 背景，恢复纯文字高亮
+- TodayStatus：恢复 emoji 🔥 文案，移除 FlameIcon SVG，streakBadge 圆角恢复 12
+- MoodSelector：未选中边框恢复灰色(border)，圆角恢复 24，字重恢复 600
+- HomeScreen：进度条恢复 surface 背景/圆角 20/黑色数值，viewTabs 圆角恢复 12
+- MonthView/WeekView：日历格子恢复满色背景，圆角恢复 12，今日标记恢复单层深色边框
+- YearView：日历格子恢复满色背景（保留 miniDayCell 默认 backgroundColor 修复）
+- AnalysisScreen：移除页面标题，统计卡片恢复 3 独立卡片+黑色数字，toggle 背景恢复 background，提示卡恢复横向
+- MoodPieChart：strokeWidth 恢复 16，中心恢复仅数字，图例恢复单行
+- SettingsScreen：移除页面标题/行图标/页脚，按钮恢复上下堆叠，版本号恢复纯文本
+
+## [0.3.23] - 2026-06-27
+
+### 修复
+- TabBar 激活态背景色从暖灰改为浅绿(goodLight)，清晰区分激活态
+- MoodSelector 按钮圆角 24→16，未选中字重 600→500，选中时覆盖为 600
+- MonthView/WeekView 日期格子圆角 12→8，更适配小尺寸格子
+- MonthView/WeekView 今日标记改为满色背景+白字+单层白色边框（安卓单层边框稳定，替代 CSS 双层 ring）
+- AnalysisScreen 补充"分析"页面标题（Phase 4 遗漏）
+- AnalysisScreen periodTabs/chartToggle 背景色从 background 改为 bgAlt，对比度更好
+- MoodPieChart 环形描边宽度 16→20，视觉更饱满
+
+## [0.3.22] - 2026-06-27
+
+### 新增
+- **UI 视觉优化**（基于设计预稿全量对齐）
+  - 设计 Token 扩展：新增浅色变体（badLight/okayLight/goodLight）、背景变体（badBg/okayBg/goodBg）、语义色、SHADOWS 阴影常量
+  - Tab Bar：激活态添加暖灰 pill 背景高亮
+  - 首页：
+    - TodayStatus 连续天数改用 amber 火焰 SVG 图标 + pill 样式
+    - MoodSelector 未选中按钮边框改为按心情色（靛蓝/琥珀/绿色），边框加粗至 2px
+    - 进度条区域改用 surfaceAlt 背景 + 绿色数值
+    - 周/月/年切换改用 pill 样式（borderRadius 999）
+    - MonthView/WeekView/YearView 有记录日改用浅色变体背景，今日标记区分有/无记录两种边框色
+  - 分析页：新增"分析"页面大标题；统计卡片合并为单卡片 + 竖分隔线 + 彩色数字；周期/图表切换改用 pill 样式；饼图中心新增"天记录"标签；图例改为左 label / 右"N天 NN%"两列布局；提示卡改为纵向布局
+  - 设置页：新增"设置"页面大标题；每行添加 36x36 彩色背景图标（铃铛/时钟/数据库）；导出/导入按钮改为并排布局（outlined + filled）；版本号改用 pill 样式；隐私说明添加锁图标；新增"用 ❤️ 为你打造"页脚
+
+## [0.3.21] - 2026-06-26
+
+### 修复
+- **年视图无记录日期丢圆角 Bug**（v0.3.20 修复不彻底）
+  - 根因：`miniDayCell` 无默认 `backgroundColor`，无记录时为 `'transparent'`，Android 在透明背景下 `borderRadius` 不生效
+  - 修复：`miniDayCell` 加默认 `backgroundColor: COLORS.surface`；无记录时 `moodColor` 从 `'transparent'` 改为 `COLORS.surface`
+  - 与 v0.3.19 MonthView 修复同源：Android 要求 View 有实际像素才能裁剪圆角
+
+## [0.3.20] - 2026-06-25
+
+### 修复
+- **年视图跨年切换丢圆角 Bug**（v0.3.19 修复不彻底）
+  - 根因：`YearView` 的日期格子 `key={`${m}-${d}`}` 跨年不唯一，从 2025 切到 2026 时 React 复用同一 View 实例，Android 原生层 `borderRadius` 不重新下发
+  - 修复：key 加 year 前缀 → `key={`${year}-${m}-${d}`}`；空位 key 同步 → `key={`empty-${year}-${m}-${i}`}`
+  - 原则：不改动 `miniDayCell` 的 `backgroundColor`（保持无记录日透明，不改变视觉设计），只改 key
+
+## [0.3.19] - 2026-06-25
+
+### 修复
+- **日历圆角丢失 Bug**（记录页月视图/年视图切换几次后方块圆角变直角）
+  - 根因 A（主）：日期格子 `key` 用列索引/日期数字，切换月份时 key 相同导致 React 复用 View 实例，Android 原生层 borderRadius 在 style 数组条件更新时不稳定刷新
+  - 根因 B（辅）：`MonthView` 的 `moodCircle` 无默认 `backgroundColor`，从"无属性"→"有属性"切换比"有值→改值"更易触发 borderRadius 裁剪失效
+  - `MonthView`：moodCircle 加默认 `backgroundColor: COLORS.border`，移除冗余条件分支；格子 key 从 `ci` 改为 `dateStr`
+  - `YearView`：key 从 `d` 改为 `${m}-${d}`，空位改为 `empty-${m}-${i}`
+  - `WeekView`：key 从 `i` 改为 `dateStr`（预防性）
+  - 不引入嵌套 wrapper（避免重蹈 v0.3.17 失败覆辙），仅改 key 和默认值，从上游规避问题
+
+## [0.3.18] - 2026-06-25
+
+### 修复
+- **七层架构全面排查修复**（不发版，本地记录）
+  - **视图层**（8 处）：
+    - `DateMoodModal` handleDelete 删除心情后未同步小组件状态 → 添加 `updateMoodWidget()` 调用
+    - `DateMoodModal` useEffect 切换日期时存在竞态 → 添加 `isCancelled` 取消标志
+    - `DateMoodModal` 关闭按钮在 loading 中可被点击 → 添加 `disabled={loading}`
+    - `MoodPieChart` ratio=0 段配合 `strokeLinecap="round"` 渲染多余圆点 → 过滤零占比段
+    - `MoodPieChart` / `MoodBarChart` 动画 useEffect 无 cleanup → 卸载时调用 `anim.stop()`
+    - `MoodIcon` 缺少 `React.memo` → 包装避免无效 SVG 重绘
+    - `Toast` useEffect 依赖数组不全 → 补全 `[duration, onHide]`
+  - **工具层**（1 处）：
+    - `importData` parseJSONBackup 未返回 skipped 计数（ImportResult.skipped 永远 0）→ 增加计数并透传到结果
+  - **数据层**（1 处）：
+    - `moodDB.getMoodStats` 在空查询范围返回 `{bad: null, okay: null, good: null, total: 0}`，破坏 MoodStats 类型安全 → SQL 改用 `COALESCE(SUM(...), 0)`
+
+### 已知问题（未在本次修复）
+- `notification.cancelTodayReminder` 取消整个 DAILY 递归调度而非仅今日一次。已有 App 启动时 `applyNotificationSettings` 恢复调度作为缓解，根本修复需重新设计"今日已记录"机制（改用 lastRecordedDate 标记），留待后续。
+
 ## [0.3.16] - 2026-06-20
 
 ### 优化

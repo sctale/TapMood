@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import type { MoodRecord } from '../types';
 import { MOOD_CONFIG, COLORS, SPACING, FONT_SIZE } from '../constants';
 import { getMonthName, getDaysInMonth } from '../utils/dateUtils';
@@ -7,6 +7,7 @@ import { getMonthName, getDaysInMonth } from '../utils/dateUtils';
 interface YearViewProps {
   year: number;
   records: MoodRecord[];
+  onDatePress?: (date: string) => void;
 }
 
 function buildRecordMap(records: MoodRecord[]): Map<string, MoodRecord> {
@@ -15,8 +16,12 @@ function buildRecordMap(records: MoodRecord[]): Map<string, MoodRecord> {
   return map;
 }
 
-export default React.memo(function YearView({ year, records }: YearViewProps) {
+export default React.memo(function YearView({ year, records, onDatePress }: YearViewProps) {
   const recordMap = buildRecordMap(records);
+  // 计算今天日期字符串（用于禁用未来日期）
+  const today = new Date();
+  const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+  const isCurrentYear = year === today.getFullYear();
 
   // 12个月的迷你日历
   const months: React.ReactNode[] = [];
@@ -28,18 +33,29 @@ export default React.memo(function YearView({ year, records }: YearViewProps) {
     // 构建该月的小格子
     const cells: React.ReactNode[] = [];
     for (let i = 0; i < startOffset; i++) {
-      cells.push(<View key={`e${i}`} style={styles.miniEmptyCell} />);
+      cells.push(<View key={`empty-${year}-${m}-${i}`} style={styles.miniEmptyCell} />);
     }
     for (let d = 1; d <= daysInMonth; d++) {
       const dateStr = `${year}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
       const record = recordMap.get(dateStr);
-      const moodColor = record ? MOOD_CONFIG[record.mood].color : 'transparent';
+      const moodColor = record ? MOOD_CONFIG[record.mood].color : COLORS.surface;
+      // 未来日期禁用点击
+      const isFuture = isCurrentYear && dateStr > todayStr;
 
       cells.push(
-        <View
-          key={d}
-          style={[styles.miniDayCell, { backgroundColor: moodColor }]}
-        />
+        onDatePress && !isFuture ? (
+          <TouchableOpacity
+            key={`${year}-${m}-${d}`}
+            style={[styles.miniDayCell, { backgroundColor: moodColor }]}
+            onPress={() => onDatePress(dateStr)}
+            activeOpacity={0.6}
+          />
+        ) : (
+          <View
+            key={`${year}-${m}-${d}`}
+            style={[styles.miniDayCell, { backgroundColor: moodColor }, isFuture && styles.miniDayCellDisabled]}
+          />
+        )
       );
     }
 
@@ -89,7 +105,11 @@ const styles = StyleSheet.create({
     width: 8,
     height: 8,
     borderRadius: 2,
+    backgroundColor: COLORS.surface, // 默认背景色，确保 Android borderRadius 生效
     margin: 0.5,
+  },
+  miniDayCellDisabled: {
+    opacity: 0.4,
   },
   miniEmptyCell: {
     width: 8,

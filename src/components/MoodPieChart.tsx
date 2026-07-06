@@ -20,12 +20,14 @@ export default function MoodPieChart({ stats, size = 180 }: MoodPieChartProps) {
 
   useEffect(() => {
     animValue.setValue(0);
-    Animated.timing(animValue, {
+    const anim = Animated.timing(animValue, {
       toValue: 1,
       duration: 500,
       easing: Easing.out(Easing.ease),
       useNativeDriver: true,
-    }).start();
+    });
+    anim.start();
+    return () => anim.stop();
   }, [stats]);
 
   // 计算各段弧长
@@ -58,31 +60,26 @@ export default function MoodPieChart({ stats, size = 180 }: MoodPieChartProps) {
       ) : (
         <Animated.View style={{ opacity: animValue }}>
           <Svg width={size} height={size}>
-            {arcs.map((arc, i) => (
-              <G key={i} rotation={arc.rotation} origin={`${center}, ${center}`}>
-                <Circle
-                  cx={center}
-                  cy={center}
-                  r={radius}
-                  fill="none"
-                  stroke={arc.color}
-                  strokeWidth={strokeWidth}
-                  strokeDasharray={arc.strokeDasharray}
-                  strokeLinecap="round"
-                />
-              </G>
-            ))}
-            {/* 中心文字 - 使用SvgText精确定位 */}
-            <SvgText
-              x={center}
-              y={center + 6}
-              textAnchor="middle"
-              fontSize={FONT_SIZE.xl}
-              fontWeight="bold"
-              fill={COLORS.text}
-            >
-              {stats.total}
-            </SvgText>
+            {arcs.map((arc, i) => {
+              // 跳过占比为 0 的段，避免 strokeLinecap="round" 画出多余圆点
+              if (arc.ratio === 0) return null;
+              return (
+                <G key={i} rotation={arc.rotation} origin={`${center}, ${center}`}>
+                  <Circle
+                    cx={center}
+                    cy={center}
+                    r={radius}
+                    fill="none"
+                    stroke={arc.color}
+                    strokeWidth={strokeWidth}
+                    strokeDasharray={arc.strokeDasharray}
+                    strokeLinecap="round"
+                  />
+                </G>
+              );
+            })}
+            {/* 中心文字 */}
+            <SvgText x={center} y={center + 6} textAnchor="middle" fontSize={FONT_SIZE.xl} fontWeight="bold" fill={COLORS.text}>{stats.total}</SvgText>
           </Svg>
         </Animated.View>
       )}
@@ -92,12 +89,8 @@ export default function MoodPieChart({ stats, size = 180 }: MoodPieChartProps) {
         {segments.map((seg) => (
           <View key={seg.level} style={styles.legendItem}>
             <View style={[styles.legendDot, { backgroundColor: seg.color }]} />
-            <Text style={styles.legendLabel}>
-              {MOOD_CONFIG[seg.level].label} {stats[seg.level]}天
-            </Text>
-            <Text style={styles.legendPercent}>
-              {stats.total > 0 ? `${Math.round(seg.ratio * 100)}%` : '0%'}
-            </Text>
+            <Text style={styles.legendLabel}>{MOOD_CONFIG[seg.level].label} {stats[seg.level]}天</Text>
+            <Text style={styles.legendPercent}>{stats.total > 0 ? `${Math.round(seg.ratio * 100)}%` : '0%'}</Text>
           </View>
         ))}
       </View>
@@ -136,11 +129,12 @@ const styles = StyleSheet.create({
   legendLabel: {
     fontSize: FONT_SIZE.sm,
     color: COLORS.text,
+    fontWeight: '500',
     flex: 1,
   },
   legendPercent: {
     fontSize: FONT_SIZE.sm,
-    color: COLORS.textSecondary,
+    color: COLORS.textTertiary,
     fontWeight: '600',
   },
 });

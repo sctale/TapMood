@@ -6,6 +6,17 @@ Read the exact versioned docs at https://docs.expo.dev/versions/v56.0.0/ before 
 
 ---
 
+## 本地操作约束（2026-06-25 至 2026-06-30）
+
+> 因当前 GitHub 额度不足，**即日起至 2026-06-30 期间所有开发/发布操作均在本地完成**，不上传 GitHub，也不使用任何 GitHub Actions。
+
+- 禁止 `git push`、`gh release create/upload` 及 Trae GitHub MCP 的写操作
+- 禁止新增或触发任何 `.github/workflows/` 工作流
+- 版本发布仅在本地构建 APK，版本号更新以 `app.json` / `CHANGELOG.md` / `README.md` 本地记录为准
+- 6 月 30 日之后再恢复远端同步与 GitHub Release 流程
+
+---
+
 ## Android 构建流程（标准流程）
 
 每次修改代码后，按以下步骤构建 APK：

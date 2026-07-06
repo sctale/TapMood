@@ -22,10 +22,9 @@ interface MoodIconProps {
  * 设计参数与小组件 SVG 保持一致：viewport 40x40，圆形半径 16，
  * 主笔画 strokeWidth=1.8，描边 strokeWidth=1，strokeLineCap="round"。
  */
-export default function MoodIcon({ mood, size = 40, isSelected = false }: MoodIconProps) {
+function MoodIconBase({ mood, size = 40, isSelected = false }: MoodIconProps) {
   // 选中时颜色轻微加深系数，保持原配色基调
   const darken = isSelected ? 0.88 : 1;
-
   // 差：淡紫色系
   if (mood === 'bad') {
     return (
@@ -133,3 +132,7 @@ export default function MoodIcon({ mood, size = 40, isSelected = false }: MoodIc
     </Svg>
   );
 }
+
+// 用 React.memo 包装避免父组件 re-render 时无差别重绘 SVG
+const MoodIcon = React.memo(MoodIconBase);
+export default MoodIcon;

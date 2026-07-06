@@ -49,31 +49,34 @@ function normalizeRecord(r: MoodRecord): MoodRecord {
 }
 
 // 解析 JSON 备份文件
-function parseJSONBackup(text: string): { records: MoodRecord[]; notificationSettings?: NotificationSettings; error?: string } {
+function parseJSONBackup(text: string): { records: MoodRecord[]; skipped: number; notificationSettings?: NotificationSettings; error?: string } {
   let parsed: unknown;
   try {
     parsed = JSON.parse(text);
   } catch {
-    return { records: [], error: 'JSON 解析失败' };
+    return { records: [], skipped: 0, error: 'JSON 解析失败' };
   }
   if (!parsed || typeof parsed !== 'object') {
-    return { records: [], error: 'JSON 结构无效' };
+    return { records: [], skipped: 0, error: 'JSON 结构无效' };
   }
   const obj = parsed as Record<string, unknown>;
   if (obj.version !== SUPPORTED_JSON_VERSION) {
-    return { records: [], error: `不支持的备份版本: ${obj.version}` };
+    return { records: [], skipped: 0, error: `不支持的备份版本: ${obj.version}` };
   }
   if (!Array.isArray(obj.records)) {
-    return { records: [], error: '缺少 records 字段' };
+    return { records: [], skipped: 0, error: '缺少 records 字段' };
   }
   const records: MoodRecord[] = [];
+  let skipped = 0;
   for (const r of obj.records) {
     if (isValidRecord(r)) {
       records.push(normalizeRecord(r as MoodRecord));
+    } else {
+      skipped++;
     }
   }
   const notificationSettings = obj.notificationSettings as NotificationSettings | undefined;
-  return { records, notificationSettings };
+  return { records, skipped, notificationSettings };
 }
 
 // 重新调度通知（导入新通知设置后）
@@ -82,6 +85,7 @@ function parseJSONBackup(text: string): { records: MoodRecord[]; notificationSet
 // 导入已解析的记录（执行数据库写入 + 副作用）
 async function applyImport(
   records: MoodRecord[],
+  skipped: number,
   notificationSettings: NotificationSettings | undefined,
   strategy: ImportStrategy
 ): Promise<ImportResult> {
@@ -107,7 +111,7 @@ async function applyImport(
       success: true,
       strategy,
       imported: records.length,
-      skipped: 0,
+      skipped,
     };
   } catch (e) {
     return {
@@ -151,12 +155,12 @@ export async function pickAndImportData(strategy: ImportStrategy): Promise<Impor
     return { success: false, imported: 0, skipped: 0, error: '文件读取失败' };
   }
 
-  const { records, notificationSettings, error } = parseJSONBackup(text);
+  const { records, skipped, notificationSettings, error } = parseJSONBackup(text);
   if (error) {
     return { success: false, imported: 0, skipped: 0, error };
   }
   if (records.length === 0) {
     return { success: false, imported: 0, skipped: 0, error: '备份中无有效记录' };
   }
-  return applyImport(records, notificationSettings, strategy);
+  return applyImport(records, skipped, notificationSettings, strategy);
 }

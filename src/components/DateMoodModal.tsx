@@ -23,14 +23,16 @@ export default function DateMoodModal({ visible, date, onClose, onRecorded }: Da
   useEffect(() => {
     if (!visible || !date) return;
     setCurrentMood(null);
+    let isCancelled = false;
     (async () => {
       try {
         const record = await getMoodByDate(date);
-        setCurrentMood(record?.mood ?? null);
+        if (!isCancelled) setCurrentMood(record?.mood ?? null);
       } catch {
         // 加载失败静默处理
       }
     })();
+    return () => { isCancelled = true; };
   }, [visible, date]);
 
   const handleSelect = async (level: MoodLevel) => {
@@ -64,6 +66,8 @@ export default function DateMoodModal({ visible, date, onClose, onRecorded }: Da
     try {
       await deleteMoodByDate(date);
       setCurrentMood(null);
+      // 同步更新小组件状态（与 handleSelect 保持一致）
+      await updateMoodWidget();
       onRecorded();
     } catch {
       // 失败静默
@@ -140,7 +144,7 @@ export default function DateMoodModal({ visible, date, onClose, onRecorded }: Da
                 <Text style={styles.deleteText}>删除记录</Text>
               </TouchableOpacity>
             )}
-            <TouchableOpacity onPress={onClose} style={styles.closeBtn}>
+            <TouchableOpacity onPress={onClose} disabled={loading} style={styles.closeBtn}>
               <Text style={styles.closeText}>关闭</Text>
             </TouchableOpacity>
           </View>

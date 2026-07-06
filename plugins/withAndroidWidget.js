@@ -29,16 +29,16 @@ const JAVA_UTILS = `
         try {
             java.io.File file = new java.io.File(context.getFilesDir(), "widget_state.json");
             if (!file.exists()) return false;
-            java.io.BufferedReader reader = new java.io.BufferedReader(new java.io.FileReader(file));
-            StringBuilder sb = new StringBuilder();
-            String line;
-            while ((line = reader.readLine()) != null) sb.append(line);
-            reader.close();
-            org.json.JSONObject json = new org.json.JSONObject(sb.toString());
-            String date = json.getString("date");
-            String today = new java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.getDefault()).format(new java.util.Date());
-            String mood = json.optString("mood", "");
-            return today.equals(date) && !mood.isEmpty();
+            try (java.io.BufferedReader reader = new java.io.BufferedReader(new java.io.FileReader(file))) {
+                StringBuilder sb = new StringBuilder();
+                String line;
+                while ((line = reader.readLine()) != null) sb.append(line);
+                org.json.JSONObject json = new org.json.JSONObject(sb.toString());
+                String date = json.getString("date");
+                String today = new java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.US).format(new java.util.Date());
+                String mood = json.optString("mood", "");
+                return today.equals(date) && !mood.isEmpty();
+            }
         } catch (Exception e) { return false; }
     }
 
@@ -46,12 +46,12 @@ const JAVA_UTILS = `
         try {
             java.io.File file = new java.io.File(context.getFilesDir(), "widget_config.json");
             if (!file.exists()) return 3;
-            java.io.BufferedReader reader = new java.io.BufferedReader(new java.io.FileReader(file));
-            StringBuilder sb = new StringBuilder();
-            String line;
-            while ((line = reader.readLine()) != null) sb.append(line);
-            reader.close();
-            return new org.json.JSONObject(sb.toString()).optInt("bgAlpha", 3);
+            try (java.io.BufferedReader reader = new java.io.BufferedReader(new java.io.FileReader(file))) {
+                StringBuilder sb = new StringBuilder();
+                String line;
+                while ((line = reader.readLine()) != null) sb.append(line);
+                return new org.json.JSONObject(sb.toString()).optInt("bgAlpha", 3);
+            }
         } catch (Exception e) { return 3; }
     }
 
@@ -202,7 +202,7 @@ public class WidgetConfigActivity extends Activity {
             btnParams.bottomMargin = 8;
 
             if (levels[i] == currentLevel) {
-                btn.setBackgroundColor(0xFF26A69A);
+                btn.setBackgroundColor(0xFF7986CB);
                 btn.setTextColor(0xFFFFFFFF);
             } else {
                 btn.setBackgroundColor(0xFFF5F5F5);
@@ -230,9 +230,9 @@ public class WidgetConfigActivity extends Activity {
             org.json.JSONObject json = new org.json.JSONObject();
             json.put("bgAlpha", level);
             java.io.File file = new java.io.File(getFilesDir(), "widget_config.json");
-            java.io.FileWriter writer = new java.io.FileWriter(file);
-            writer.write(json.toString());
-            writer.close();
+            try (java.io.FileWriter writer = new java.io.FileWriter(file)) {
+                writer.write(json.toString());
+            }
         } catch (Exception e) { e.printStackTrace(); }
     }
 
@@ -240,12 +240,12 @@ public class WidgetConfigActivity extends Activity {
         try {
             java.io.File file = new java.io.File(getFilesDir(), "widget_config.json");
             if (!file.exists()) return 3;
-            java.io.BufferedReader reader = new java.io.BufferedReader(new java.io.FileReader(file));
-            StringBuilder sb = new StringBuilder();
-            String line;
-            while ((line = reader.readLine()) != null) sb.append(line);
-            reader.close();
-            return new org.json.JSONObject(sb.toString()).optInt("bgAlpha", 3);
+            try (java.io.BufferedReader reader = new java.io.BufferedReader(new java.io.FileReader(file))) {
+                StringBuilder sb = new StringBuilder();
+                String line;
+                while ((line = reader.readLine()) != null) sb.append(line);
+                return new org.json.JSONObject(sb.toString()).optInt("bgAlpha", 3);
+            }
         } catch (Exception e) { return 3; }
     }
 
@@ -321,10 +321,10 @@ const WIDGET_INFO = `<?xml version="1.0" encoding="utf-8"?>
 
 // ============================================================
 // 极简矢量图标 - 精致圆形 + 简笔表情
-// 设计理念：柔和底色 + 精致描边 + 清晰表情
-// 差：淡紫圆 + 圆点眼 + 下弯嘴
-// 中：暖灰圆 + 圆点眼 + 直线嘴
-// 好：薄荷圆 + 弯弯笑眼 + 上弯嘴
+// 设计理念：与 App 内心情色统一（靛蓝/琥珀/薄荷绿）
+// 差：淡靛蓝圆 + 圆点眼 + 下弯嘴
+// 中：暖琥珀圆 + 圆点眼 + 直线嘴
+// 好：薄荷绿圆 + 弯弯笑眼 + 上弯嘴
 // ============================================================
 const IC_MOOD_BAD = `<?xml version="1.0" encoding="utf-8"?>
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
@@ -332,19 +332,19 @@ const IC_MOOD_BAD = `<?xml version="1.0" encoding="utf-8"?>
     android:viewportWidth="40" android:viewportHeight="40">
     <!-- 圆形背景 -->
     <path android:pathData="M20,20m-16,0a16,16 0,1 1,32 0a16,16 0,1 1,-32 0"
-        android:fillColor="#EDE7F6"/>
+        android:fillColor="#E8EAF6"/>
     <!-- 圆形描边 -->
     <path android:pathData="M20,20m-16,0a16,16 0,1 1,32 0a16,16 0,1 1,-32 0"
-        android:strokeColor="#D1C4E9" android:strokeWidth="1" android:fillColor="@android:color/transparent"/>
+        android:strokeColor="#C5CAE9" android:strokeWidth="1" android:fillColor="@android:color/transparent"/>
     <!-- 左眼 - 圆点 -->
     <path android:pathData="M14.5,15.5m-1.5,0a1.5,1.5 0,1 1,3 0a1.5,1.5 0,1 1,-3 0"
-        android:fillColor="#7E57C2"/>
+        android:fillColor="#7986CB"/>
     <!-- 右眼 - 圆点 -->
     <path android:pathData="M25.5,15.5m-1.5,0a1.5,1.5 0,1 1,3 0a1.5,1.5 0,1 1,-3 0"
-        android:fillColor="#7E57C2"/>
+        android:fillColor="#7986CB"/>
     <!-- 下弯嘴 -->
     <path android:pathData="M14.5,27 Q20,22.5 25.5,27"
-        android:strokeColor="#7E57C2" android:strokeWidth="1.8"
+        android:strokeColor="#7986CB" android:strokeWidth="1.8"
         android:strokeLineCap="round" android:fillColor="@android:color/transparent"/>
 </vector>`;
 
@@ -354,19 +354,19 @@ const IC_MOOD_OKAY = `<?xml version="1.0" encoding="utf-8"?>
     android:viewportWidth="40" android:viewportHeight="40">
     <!-- 圆形背景 -->
     <path android:pathData="M20,20m-16,0a16,16 0,1 1,32 0a16,16 0,1 1,-32 0"
-        android:fillColor="#ECEFF1"/>
+        android:fillColor="#FFF3E0"/>
     <!-- 圆形描边 -->
     <path android:pathData="M20,20m-16,0a16,16 0,1 1,32 0a16,16 0,1 1,-32 0"
-        android:strokeColor="#CFD8DC" android:strokeWidth="1" android:fillColor="@android:color/transparent"/>
+        android:strokeColor="#FFE0B2" android:strokeWidth="1" android:fillColor="@android:color/transparent"/>
     <!-- 左眼 - 圆点 -->
     <path android:pathData="M14.5,16m-1.5,0a1.5,1.5 0,1 1,3 0a1.5,1.5 0,1 1,-3 0"
-        android:fillColor="#78909C"/>
+        android:fillColor="#FFB74D"/>
     <!-- 右眼 - 圆点 -->
     <path android:pathData="M25.5,16m-1.5,0a1.5,1.5 0,1 1,3 0a1.5,1.5 0,1 1,-3 0"
-        android:fillColor="#78909C"/>
+        android:fillColor="#FFB74D"/>
     <!-- 直线嘴 -->
     <path android:pathData="M15,25 L25,25"
-        android:strokeColor="#78909C" android:strokeWidth="1.8"
+        android:strokeColor="#FFB74D" android:strokeWidth="1.8"
         android:strokeLineCap="round"/>
 </vector>`;
 
@@ -376,30 +376,30 @@ const IC_MOOD_GOOD = `<?xml version="1.0" encoding="utf-8"?>
     android:viewportWidth="40" android:viewportHeight="40">
     <!-- 圆形背景 -->
     <path android:pathData="M20,20m-16,0a16,16 0,1 1,32 0a16,16 0,1 1,-32 0"
-        android:fillColor="#E0F2F1"/>
+        android:fillColor="#E8F5E9"/>
     <!-- 圆形描边 -->
     <path android:pathData="M20,20m-16,0a16,16 0,1 1,32 0a16,16 0,1 1,-32 0"
-        android:strokeColor="#B2DFDB" android:strokeWidth="1" android:fillColor="@android:color/transparent"/>
+        android:strokeColor="#C8E6C9" android:strokeWidth="1" android:fillColor="@android:color/transparent"/>
     <!-- 左眼 - 弯弯笑眼 -->
     <path android:pathData="M12,17 Q14.5,13 17,17"
-        android:strokeColor="#26A69A" android:strokeWidth="1.8"
+        android:strokeColor="#81C784" android:strokeWidth="1.8"
         android:strokeLineCap="round" android:fillColor="@android:color/transparent"/>
     <!-- 右眼 - 弯弯笑眼 -->
     <path android:pathData="M23,17 Q25.5,13 28,17"
-        android:strokeColor="#26A69A" android:strokeWidth="1.8"
+        android:strokeColor="#81C784" android:strokeWidth="1.8"
         android:strokeLineCap="round" android:fillColor="@android:color/transparent"/>
     <!-- 上弯嘴 -->
     <path android:pathData="M14.5,24 Q20,30 25.5,24"
-        android:strokeColor="#26A69A" android:strokeWidth="1.8"
+        android:strokeColor="#81C784" android:strokeWidth="1.8"
         android:strokeLineCap="round" android:fillColor="@android:color/transparent"/>
 </vector>`;
 
 // ============================================================
 // 按钮背景 - 极简圆角矩形，带微妙色彩倾向
 // ============================================================
-const DRAWABLE_BTN_BAD = `<?xml version="1.0" encoding="utf-8"?><shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle"><solid android:color="#F3E5F5"/><corners android:radius="12dp"/></shape>`;
-const DRAWABLE_BTN_OKAY = `<?xml version="1.0" encoding="utf-8"?><shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle"><solid android:color="#ECEFF1"/><corners android:radius="12dp"/></shape>`;
-const DRAWABLE_BTN_GOOD = `<?xml version="1.0" encoding="utf-8"?><shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle"><solid android:color="#E0F2F1"/><corners android:radius="12dp"/></shape>`;
+const DRAWABLE_BTN_BAD = `<?xml version="1.0" encoding="utf-8"?><shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle"><solid android:color="#E8EAF6"/><corners android:radius="12dp"/></shape>`;
+const DRAWABLE_BTN_OKAY = `<?xml version="1.0" encoding="utf-8"?><shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle"><solid android:color="#FFF3E0"/><corners android:radius="12dp"/></shape>`;
+const DRAWABLE_BTN_GOOD = `<?xml version="1.0" encoding="utf-8"?><shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle"><solid android:color="#E8F5E9"/><corners android:radius="12dp"/></shape>`;
 
 // ============================================================
 // 背景透明度等级（使用系统标准圆角 v31+，兼容旧版 20dp）
@@ -425,8 +425,12 @@ const STRINGS_XML = `<?xml version="1.0" encoding="utf-8"?><resources>
 
 // ============================================================
 function writeFile(dir, filename, content) {
-  fs.mkdirSync(dir, { recursive: true });
-  fs.writeFileSync(path.join(dir, filename), content);
+  try {
+    fs.mkdirSync(dir, { recursive: true });
+    fs.writeFileSync(path.join(dir, filename), content);
+  } catch (e) {
+    throw new Error(`withAndroidWidget: 写入 ${filename} 失败: ${e.message}`);
+  }
 }
 
 // 将指定字符串合并到目标 strings.xml，已存在则更新，不存在则在 </resources> 前插入

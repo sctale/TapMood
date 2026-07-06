@@ -1,7 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import type { MoodRecord, MoodLevel, MoodStats } from '../types';
 import * as moodDB from '../database/moodDB';
-import { getToday } from '../utils/dateUtils';
 
 // 获取今日心情
 export function useTodayMood() {
@@ -71,7 +70,26 @@ export function useMoodRange(startDate: string, endDate: string) {
     }
   }, [startDate, endDate]);
 
-  useEffect(() => { refresh(); }, [refresh]);
+  // 参数变化时自动加载，带竞态取消
+  useEffect(() => {
+    let isCancelled = false;
+    (async () => {
+      setLoading(true);
+      try {
+        setError(null);
+        const data = await moodDB.getMoodRange(startDate, endDate);
+        if (!isCancelled) setRecords(data);
+      } catch (e) {
+        if (!isCancelled) {
+          setError('加载记录失败');
+          setRecords([]);
+        }
+      } finally {
+        if (!isCancelled) setLoading(false);
+      }
+    })();
+    return () => { isCancelled = true; };
+  }, [startDate, endDate]);
 
   return { records, loading, error, refresh };
 }
@@ -95,7 +113,23 @@ export function useMoodStats(startDate: string, endDate: string) {
     }
   }, [startDate, endDate]);
 
-  useEffect(() => { refresh(); }, [refresh]);
+  // 参数变化时自动加载，带竞态取消
+  useEffect(() => {
+    let isCancelled = false;
+    (async () => {
+      setLoading(true);
+      try {
+        setError(null);
+        const data = await moodDB.getMoodStats(startDate, endDate);
+        if (!isCancelled) setStats(data);
+      } catch (e) {
+        if (!isCancelled) setError('加载统计数据失败');
+      } finally {
+        if (!isCancelled) setLoading(false);
+      }
+    })();
+    return () => { isCancelled = true; };
+  }, [startDate, endDate]);
 
   return { stats, loading, error, refresh };
 }

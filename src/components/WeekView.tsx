@@ -52,14 +52,23 @@ export default React.memo(function WeekView({ currentDate, records, onDatePress 
 
           return (
             <TouchableOpacity
-              key={i}
+              key={dateStr}
               style={styles.dayCell}
               onPress={() => onDatePress?.(dateStr)}
               activeOpacity={0.6}
               disabled={!onDatePress}
             >
-              <View style={[styles.moodBlock, { backgroundColor: moodColor }]}>
-                <Text style={[styles.dayNumber, isToday && styles.todayText]}>
+              <View style={[
+                styles.moodBlock,
+                { backgroundColor: moodColor },
+                isToday && record && styles.todayBlockRecorded,
+                isToday && !record && styles.todayBlockEmpty,
+              ]}>
+                <Text style={[
+                  styles.dayNumber,
+                  !record && styles.dayNumberEmpty,
+                  isToday && styles.todayText,
+                ]}>
                   {d.getDate()}
                 </Text>
               </View>
@@ -100,10 +109,21 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  todayBlockRecorded: {
+    borderWidth: 2,
+    borderColor: COLORS.text,
+  },
+  todayBlockEmpty: {
+    borderWidth: 2,
+    borderColor: COLORS.textTertiary,
+  },
   dayNumber: {
     fontSize: FONT_SIZE.sm,
-    color: COLORS.surface,
+    color: COLORS.text,
     fontWeight: '600',
+  },
+  dayNumberEmpty: {
+    color: COLORS.textSecondary,
   },
   todayText: {
     fontWeight: 'bold',

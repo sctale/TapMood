@@ -49,7 +49,7 @@ export default React.memo(function MonthView({ year, month, records, onDatePress
         <View key={ri} style={styles.weekRow}>
           {row.map((day, ci) => {
             if (day === null) {
-              return <View key={ci} style={styles.emptyCell} />;
+              return <View key={`empty-${ri}-${ci}`} style={styles.emptyCell} />;
             }
 
             const dateStr = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
@@ -59,7 +59,7 @@ export default React.memo(function MonthView({ year, month, records, onDatePress
 
             return (
               <TouchableOpacity
-                key={ci}
+                key={dateStr}
                 style={styles.dayCell}
                 onPress={() => onDatePress?.(dateStr)}
                 activeOpacity={0.6}
@@ -68,9 +68,9 @@ export default React.memo(function MonthView({ year, month, records, onDatePress
                 <View style={[
                   styles.moodCircle,
                   record && { backgroundColor: MOOD_CONFIG[record.mood].color },
-                  !record && !isFuture && { backgroundColor: COLORS.border },
                   !record && isFuture && { backgroundColor: 'transparent' },
-                  isToday && styles.todayCircle,
+                  isToday && record && styles.todayCircleRecorded,
+                  isToday && !record && styles.todayCircleEmpty,
                 ]}>
                   <Text style={[
                     styles.dayText,
@@ -124,18 +124,23 @@ const styles = StyleSheet.create({
     width: 34,
     height: 34,
     borderRadius: 12,
+    backgroundColor: COLORS.border, // 默认背景色，被 style 数组中的条件覆盖
     alignItems: 'center',
     justifyContent: 'center',
   },
-  todayCircle: {
+  todayCircleRecorded: {
     borderWidth: 2,
     borderColor: COLORS.text,
+  },
+  todayCircleEmpty: {
+    borderWidth: 2,
+    borderColor: COLORS.textTertiary,
   },
   dayText: {
     fontSize: FONT_SIZE.xs,
   },
   dayTextRecorded: {
-    color: COLORS.surface,
+    color: COLORS.text,
     fontWeight: '600',
   },
   dayTextEmpty: {

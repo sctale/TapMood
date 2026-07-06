@@ -1,5 +1,6 @@
 import React, { useRef, useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Animated, Easing } from 'react-native';
+import Svg, { Defs, LinearGradient, Stop, Circle } from 'react-native-svg';
 import type { MoodLevel } from '../types';
 import { MOOD_CONFIG, MOOD_LEVELS, COLORS, SPACING, FONT_SIZE } from '../constants';
 import MoodIcon from './MoodIcon';
@@ -38,7 +39,7 @@ export default React.memo(function MoodSelector({ onMoodSelect, selectedMood, si
         const isSelected = selectedMood === level;
 
         return (
-          <Animated.View key={level} style={{ transform: [{ scale: scaleAnims[index] }] }}>
+          <Animated.View key={level} style={{ flex: 1, transform: [{ scale: scaleAnims[index] }] }}>
             <TouchableOpacity
               style={[
                 styles.moodButton,
@@ -67,7 +68,15 @@ export default React.memo(function MoodSelector({ onMoodSelect, selectedMood, si
                 {config.label}
               </Text>
               {isSelected && (
-                <View style={[styles.selectedDot, { backgroundColor: COLORS.surface }]} />
+                <Svg width={6} height={6} style={styles.selectedDot}>
+                  <Defs>
+                    <LinearGradient id={`dot-${level}`} x1="0" y1="0" x2="1" y2="1">
+                      <Stop offset="0" stopColor={config.gradientStart} />
+                      <Stop offset="1" stopColor={config.gradientEnd} />
+                    </LinearGradient>
+                  </Defs>
+                  <Circle cx="3" cy="3" r="3" fill={`url(#dot-${level})`} />
+                </Svg>
               )}
             </TouchableOpacity>
           </Animated.View>
@@ -88,11 +97,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: 24,
-    borderWidth: 1.5,
+    borderWidth: 2,
   },
   moodButtonLarge: {
-    width: 104,
-    height: 128,
+    height: 104,
     paddingVertical: SPACING.md,
   },
   moodButtonSmall: {
@@ -112,9 +120,6 @@ const styles = StyleSheet.create({
     fontSize: FONT_SIZE.sm,
   },
   selectedDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
     marginTop: SPACING.xs,
   },
 });

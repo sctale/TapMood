@@ -1,12 +1,14 @@
-import React, { useState, useCallback, useEffect, useMemo } from 'react';
+import React, { useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, RefreshControl, DeviceEventEmitter } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { MoodLevel, CalendarView } from '../types';
 import { COLORS, SPACING, FONT_SIZE, MOOD_EVENTS } from '../constants';
 import { useTodayMood, useMoodRange } from '../hooks/useMood';
 import { getStreak } from '../database/moodDB';
 import { getWeekRange, getMonthRange, getYearRange, getMonthName, formatDate, getDaysInMonth, isLeapYear, dayOfYear, isSameISOWeek, getMondayOfWeek } from '../utils/dateUtils';
 import { cancelTodayReminder } from '../utils/notification';
+import { hapticSuccess, hapticError } from '../utils/haptics';
 import { updateMoodWidget } from '../widgets/MoodWidget';
 import MoodSelector from '../components/MoodSelector';
 import TodayStatus from '../components/TodayStatus';
@@ -24,6 +26,17 @@ export default function HomeScreen() {
   const [modalDate, setModalDate] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [toast, setToast] = useState({ visible: false, message: '', type: 'success' as ToastType });
+  const scrollRef = useRef<ScrollView>(null);
+
+  // 切换到本 tab 时滚动到顶部
+  useEffect(() => {
+    const sub = DeviceEventEmitter.addListener(MOOD_EVENTS.TAB_FOCUS, ({ tab }: { tab: string }) => {
+      if (tab === 'home') {
+        scrollRef.current?.scrollTo({ y: 0, animated: false });
+      }
+    });
+    return () => sub.remove();
+  }, []);
 
   const { mood: todayMood, recordMood, refresh: refreshToday } = useTodayMood();
 
@@ -70,11 +83,32 @@ export default function HomeScreen() {
       await updateMoodWidget();
       // 通知分析页等需要全局统计的页面刷新
       DeviceEventEmitter.emit(MOOD_EVENTS.RECORDED);
+      hapticSuccess();
       showToast('已记录今日心情');
     } catch (e) {
+      hapticError();
       showToast('记录失败，请重试', 'error');
     }
   }, [recordMood, refreshRecords, refreshToday, showToast, updateMoodWidget]);
+
+  // 兜底：冷启动时事件监听器未就绪，从 AsyncStorage 读取小组件待处理心情
+  useEffect(() => {
+    if (!dbReady || !handleMoodSelect) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const pending = await AsyncStorage.getItem('pendingWidgetMood');
+        if (cancelled || !pending) return;
+        if (pending === 'bad' || pending === 'okay' || pending === 'good') {
+          await AsyncStorage.removeItem('pendingWidgetMood');
+          await handleMoodSelect(pending as MoodLevel);
+        }
+      } catch {
+        // 读取或记录失败静默
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [dbReady, handleMoodSelect]);
 
   // 监听小组件通过 Deep Link 发来的心情记录请求
   useEffect(() => {
@@ -193,6 +227,7 @@ export default function HomeScreen() {
     <View style={styles.container}>
       <StatusBar style="dark" />
       <ScrollView
+        ref={scrollRef}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
         refreshControl={
@@ -256,7 +291,7 @@ export default function HomeScreen() {
           {calendarView === 'month' && (
             <MonthView year={viewDate.getFullYear()} month={viewDate.getMonth() + 1} records={records} onDatePress={handleDatePress} />
           )}
-          {calendarView === 'year' && <YearView year={viewDate.getFullYear()} records={records} />}
+          {calendarView === 'year' && <YearView year={viewDate.getFullYear()} records={records} onDatePress={handleDatePress} />}
 
           {/* 日历操作提示 */}
           <Text style={styles.calendarHint}>点击日期可补记或修改心情</Text>
@@ -313,7 +348,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.surface,
     marginHorizontal: SPACING.md,
     marginTop: SPACING.md,
-    borderRadius: 20,
+    borderRadius: 16,
     padding: SPACING.lg,
   },
   progressSection: {

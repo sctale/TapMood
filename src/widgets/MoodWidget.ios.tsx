@@ -1,6 +1,7 @@
 import { createWidget, addUserInteractionListener } from 'expo-widgets';
 import { View, Text } from 'react-native';
 import * as moodDB from '../database/moodDB';
+import { MOOD_CONFIG } from '../constants';
 import type { MoodLevel } from '../types';
 
 // 小组件 Props 类型
@@ -9,17 +10,7 @@ interface MoodWidgetProps {
   streak: number;
 }
 
-// 心情颜色配置（与 constants 保持一致）
-const MOOD_COLORS: Record<string, string> = {
-  bad: '#7986CB',
-  okay: '#FFB74D',
-  good: '#81C784',
-};
-const MOOD_LABELS: Record<string, string> = {
-  bad: '差',
-  okay: '中',
-  good: '好',
-};
+// iOS 小组件专用 emoji（SVG 图标无法在 WidgetKit 中使用）
 const MOOD_EMOJIS: Record<string, string> = {
   bad: '😔',
   okay: '😐',
@@ -45,8 +36,8 @@ const moodWidget = createWidget<MoodWidgetProps>('MoodWidget', (props, environme
       {todayMood ? (
         <View style={{ alignItems: 'center', marginBottom: 12 }}>
           <Text style={{ fontSize: 36 }}>{MOOD_EMOJIS[todayMood]}</Text>
-          <Text style={{ fontSize: 14, color: MOOD_COLORS[todayMood], fontWeight: '600', marginTop: 2 }}>
-            今天：{MOOD_LABELS[todayMood]}
+          <Text style={{ fontSize: 14, color: MOOD_CONFIG[todayMood as MoodLevel].color, fontWeight: '600', marginTop: 2 }}>
+            今天：{MOOD_CONFIG[todayMood as MoodLevel].label}
           </Text>
         </View>
       ) : (
@@ -62,7 +53,7 @@ const moodWidget = createWidget<MoodWidgetProps>('MoodWidget', (props, environme
             key={level}
             {...{ widgetTarget: level } as any}
             style={{
-              backgroundColor: todayMood === level ? MOOD_COLORS[level] : (isDark ? '#2C2C2E' : '#F8F6F3'),
+              backgroundColor: todayMood === level ? MOOD_CONFIG[level].color : (isDark ? '#2C2C2E' : '#F8F6F3'),
               borderRadius: 12,
               paddingHorizontal: 14,
               paddingVertical: 8,
@@ -73,10 +64,10 @@ const moodWidget = createWidget<MoodWidgetProps>('MoodWidget', (props, environme
             <Text style={{
               fontSize: 11,
               fontWeight: '600',
-              color: todayMood === level ? '#FFFFFF' : MOOD_COLORS[level],
+              color: todayMood === level ? '#FFFFFF' : MOOD_CONFIG[level].color,
               marginTop: 2,
             }}>
-              {MOOD_LABELS[level]}
+              {MOOD_CONFIG[level].label}
             </Text>
           </View>
         ))}
@@ -93,19 +84,31 @@ const moodWidget = createWidget<MoodWidgetProps>('MoodWidget', (props, environme
 });
 
 // 监听小组件交互事件
+let isProcessingWidgetInteraction = false;
 export function setupWidgetInteractionListener() {
   return addUserInteractionListener(async (event) => {
     const mood = event.target as MoodLevel;
     if (!['bad', 'okay', 'good'].includes(mood)) return;
 
-    try {
-      // 通过 moodDB 单例记录心情，避免单独打开数据库连接造成并发隐患
-      await moodDB.recordMood(mood);
+    // 防止快速重复点击
+    if (isProcessingWidgetInteraction) return;
+    isProcessingWidgetInteraction = true;
 
-      // 更新小组件显示
+    try {
+      // 检查今日是否已记录心情（与 Android 行为一致）
+      const todayMood = await moodDB.getTodayMood();
+      if (todayMood) {
+        // 今日已记录，仅刷新小组件显示，不重复记录
+        await updateMoodWidget();
+        return;
+      }
+
+      await moodDB.recordMood(mood);
       await updateMoodWidget();
     } catch {
       // 数据库未初始化或写入失败时静默忽略
+    } finally {
+      isProcessingWidgetInteraction = false;
     }
   });
 }
