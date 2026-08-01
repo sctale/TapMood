@@ -36,42 +36,9 @@ const { setupWidgetInteractionListener, updateMoodWidget } = widgetModule as {
   updateMoodWidget: () => Promise<void>;
 };
 
-// 全局通知处理器：如果今天已记录心情，则不弹提醒
-// 注意：此代码在模块顶层执行，数据库可能尚未初始化
-// 需要防御性处理，避免 Android 启动时崩溃
-try {
-  Notifications.setNotificationHandler({
-    handleNotification: async (notification) => {
-      // 只对心情提醒通知做智能判断
-      if (notification.request.content.data?.type === 'mood_reminder') {
-        try {
-          const todayMood = await moodDB.getTodayMood();
-          if (todayMood) {
-            // 今天已记录心情，静默跳过
-            return {
-              shouldShowAlert: false,
-              shouldPlaySound: false,
-              shouldSetBadge: false,
-              shouldShowBanner: false,
-              shouldShowList: false,
-            };
-          }
-        } catch {
-          // 数据库未初始化或查询失败，默认显示通知
-        }
-      }
-      return {
-        shouldShowAlert: true,
-        shouldPlaySound: false,
-        shouldSetBadge: false,
-        shouldShowBanner: true,
-        shouldShowList: true,
-      };
-    },
-  });
-} catch {
-  // Android 上 expo-notifications 原生模块可能尚未就绪，静默忽略
-}
+// 注：setNotificationHandler 前台智能跳过已移除
+// 原因：scheduleNextReminders 在调度时已精确判断 hasTodayMood，
+// 今天已记录就不会调度今天的通知，前台 handler 永远不会触发，属冗余代码。
 
 type TabKey = 'home' | 'analysis' | 'settings';
 
