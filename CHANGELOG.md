@@ -1,5 +1,15 @@
 # 更新日志
 
+## [0.3.40] - 2026-06-27
+
+### 修复
+- **重构通知调度系统**：从 DAILY 重复通知改为一次性通知+多时机重新调度
+  - 修复 Bug1：cancelTodayReminder 会取消整个 DAILY 计划导致次日无提醒
+  - 修复 Bug2：setNotificationHandler 只在前台生效，后台时已记录心情仍弹通知
+  - 新增 scheduleNextReminder：根据今日心情状态智能调度（未记录且未到时间→今天；已记录或已过时间→明天）
+  - 新增通知点击后自动重新调度下一次提醒（App.tsx）
+  - HomeScreen 记录心情后改为 applyNotificationSettings 重新调度（跳过今天）
+
 ## [0.3.39] - 2026-06-27
 
 ### 修复

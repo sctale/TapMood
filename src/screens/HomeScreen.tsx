@@ -7,7 +7,8 @@ import { COLORS, SPACING, FONT_SIZE, MOOD_EVENTS } from '../constants';
 import { useTodayMood, useMoodRange } from '../hooks/useMood';
 import { getStreak } from '../database/moodDB';
 import { getWeekRange, getMonthRange, getYearRange, getMonthName, formatDate, getDaysInMonth, isLeapYear, dayOfYear, isSameISOWeek, getMondayOfWeek } from '../utils/dateUtils';
-import { cancelTodayReminder } from '../utils/notification';
+import { applyNotificationSettings } from '../utils/notification';
+import { getNotificationSettings } from '../database/moodDB';
 import { hapticSuccess, hapticError } from '../utils/haptics';
 import { updateMoodWidget } from '../widgets/MoodWidget';
 import MoodSelector from '../components/MoodSelector';
@@ -77,8 +78,13 @@ export default function HomeScreen() {
       refreshToday();
       const s = await getStreak();
       setStreak(s);
-      // 取消今日剩余提醒（用户已记录，无需今晚提醒）
-      await cancelTodayReminder();
+      // 重新调度通知：已记录今日心情 → 跳过今天，调度明天
+      try {
+        const settings = await getNotificationSettings();
+        await applyNotificationSettings(settings);
+      } catch {
+        // 重新调度失败静默
+      }
       // 更新小组件状态
       await updateMoodWidget();
       // 通知分析页等需要全局统计的页面刷新

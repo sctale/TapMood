@@ -113,7 +113,7 @@ export default function App() {
     (async () => {
       try {
         await moodDB.initDatabase();
-        // 恢复通知调度（cancelTodayReminder 可能已取消 DAILY 计划）
+        // 恢复通知调度（重新调度下一次一次性通知）
         try {
           const settings = await moodDB.getNotificationSettings();
           await applyNotificationSettings(settings);
@@ -142,6 +142,19 @@ export default function App() {
       // hideAsync 失败静默处理
     });
   }, [appReady]);
+
+  // 通知被点击后重新调度下一次提醒（确保明天仍有通知）
+  useEffect(() => {
+    const subscription = Notifications.addNotificationResponseReceivedListener(async () => {
+      try {
+        const settings = await moodDB.getNotificationSettings();
+        await applyNotificationSettings(settings);
+      } catch {
+        // 重新调度失败静默
+      }
+    });
+    return () => subscription.remove();
+  }, []);
 
   // 监听小组件交互
   useEffect(() => {
