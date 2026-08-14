@@ -68,12 +68,13 @@ function WheelColumn({ data, value, onChange }: WheelColumnProps) {
   }, [value, valueToIndex]);
 
   // 滚动结束时计算落点并回写 value
-  // 关键：使用 (offsetY + CENTER_OFFSET + ITEM_HEIGHT / 2) 适配
+  // 关键：使用 offsetY / ITEM_HEIGHT 适配
   //   「snapToAlignment='start' + contentContainerStyle.paddingVertical: CENTER_OFFSET」
   //   snapToAlignment='start' 含义：滚动停止时首项 top 对齐容器顶部 0。
   //   加 CENTER_OFFSET padding 后，第一项 top = CENTER_OFFSET，索引 0 的内容可见区是 [0, ITEM_HEIGHT]。
   //   因此第 N 项 top = CENTER_OFFSET + N * ITEM_HEIGHT；
-  //   选中位置（CENTER_OFFSET）对应的索引 = (offsetY + CENTER_OFFSET) / ITEM_HEIGHT。
+  //   选中位置（CENTER_OFFSET）对应的索引 = offsetY / ITEM_HEIGHT
+  //   （CENTER_OFFSET 恰为 ITEM_HEIGHT 整数倍，padding 对落点索引无影响）。
   const handleMomentumScrollEnd = useCallback(
     (e: NativeSyntheticEvent<NativeScrollEvent>) => {
       if (syncingRef.current) return;

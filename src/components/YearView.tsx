@@ -19,9 +19,9 @@ function buildRecordMap(records: MoodRecord[]): Map<string, MoodRecord> {
 export default React.memo(function YearView({ year, records, onDatePress }: YearViewProps) {
   const recordMap = buildRecordMap(records);
   // 计算今天日期字符串（用于禁用未来日期）
+  // YYYY-MM-DD 字符串字典序等价于日期比较，未来年份的所有日期也会被正确禁用
   const today = new Date();
   const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
-  const isCurrentYear = year === today.getFullYear();
 
   // 12个月的迷你日历
   const months: React.ReactNode[] = [];
@@ -39,8 +39,8 @@ export default React.memo(function YearView({ year, records, onDatePress }: Year
       const dateStr = `${year}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
       const record = recordMap.get(dateStr);
       const moodColor = record ? MOOD_CONFIG[record.mood].color : COLORS.surface;
-      // 未来日期禁用点击
-      const isFuture = isCurrentYear && dateStr > todayStr;
+      // 未来日期禁用点击（含未来年份）
+      const isFuture = dateStr > todayStr;
 
       cells.push(
         onDatePress && !isFuture ? (

@@ -54,7 +54,8 @@ const icons: Record<TabKey, React.FC<{ active: boolean }>> = {
 };
 
 // 单个 Tab 项：激活时图标轻微上移 + 颜色过渡
-function TabItem({ tab, isActive, onPress }: { tab: { key: TabKey; label: string }; isActive: boolean; onPress: () => void }) {
+// memo 生效前提：onPress 传稳定的 onTabPress（App.tsx 中为 useCallback）
+const TabItem = React.memo(function TabItem({ tab, isActive, onTabPress }: { tab: { key: TabKey; label: string }; isActive: boolean; onTabPress: (tab: TabKey) => void }) {
   const Icon = icons[tab.key];
   // 上移动画值：激活 -2，未激活 0
   const translateY = useRef(new Animated.Value(isActive ? -2 : 0)).current;
@@ -63,15 +64,15 @@ function TabItem({ tab, isActive, onPress }: { tab: { key: TabKey; label: string
     Animated.spring(translateY, {
       toValue: isActive ? -2 : 0,
       useNativeDriver: true,
-      tension: 300,
-      friction: 20,
+      stiffness: 300,
+      damping: 20,
     }).start();
   }, [isActive, translateY]);
 
   return (
     <TouchableOpacity
       style={styles.tab}
-      onPress={onPress}
+      onPress={() => onTabPress(tab.key)}
       activeOpacity={0.7}
     >
       <Animated.View style={{ transform: [{ translateY }] }}>
@@ -82,7 +83,7 @@ function TabItem({ tab, isActive, onPress }: { tab: { key: TabKey; label: string
       </Text>
     </TouchableOpacity>
   );
-}
+});
 
 export default React.memo(function TabBar({ activeTab, onTabPress }: TabBarProps) {
   return (
@@ -92,7 +93,7 @@ export default React.memo(function TabBar({ activeTab, onTabPress }: TabBarProps
           key={tab.key}
           tab={tab}
           isActive={activeTab === tab.key}
-          onPress={() => onTabPress(tab.key)}
+          onTabPress={onTabPress}
         />
       ))}
     </View>

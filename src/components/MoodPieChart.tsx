@@ -9,7 +9,7 @@ interface MoodPieChartProps {
   size?: number;
 }
 
-export default function MoodPieChart({ stats, size = 180 }: MoodPieChartProps) {
+export default React.memo(function MoodPieChart({ stats, size = 180 }: MoodPieChartProps) {
   const radius = size / 2 - 8;
   const strokeWidth = 16;
   const center = size / 2;
@@ -96,7 +96,7 @@ export default function MoodPieChart({ stats, size = 180 }: MoodPieChartProps) {
       </View>
     </View>
   );
-}
+});
 
 const styles = StyleSheet.create({
   container: {

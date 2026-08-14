@@ -1,12 +1,9 @@
 import React, { useState, useRef } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Dimensions, type NativeSyntheticEvent, type NativeScrollEvent } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, useWindowDimensions, type NativeSyntheticEvent, type NativeScrollEvent } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as Notifications from 'expo-notifications';
 import { COLORS, SPACING, FONT_SIZE, RADIUS } from '../constants';
-
-// 屏幕宽度（pagingEnabled ScrollView 每屏占满宽度）
-const SCREEN_WIDTH = Dimensions.get('window').width;
 
 interface OnboardingScreenProps {
   onDone: () => void;
@@ -22,10 +19,12 @@ const PAGES = [
 export default function OnboardingScreen({ onDone }: OnboardingScreenProps) {
   const [pageIndex, setPageIndex] = useState(0);
   const scrollRef = useRef<ScrollView>(null);
+  // 响应窗口宽度变化（iPad 分屏/旋转），模块级 Dimensions.get 只取一次会算错页宽
+  const { width } = useWindowDimensions();
 
   // 滚动结束时计算当前页索引
   const handleScroll = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
-    const index = Math.round(e.nativeEvent.contentOffset.x / SCREEN_WIDTH);
+    const index = Math.round(e.nativeEvent.contentOffset.x / width);
     if (index !== pageIndex && index >= 0 && index < PAGES.length) {
       setPageIndex(index);
     }
@@ -33,7 +32,7 @@ export default function OnboardingScreen({ onDone }: OnboardingScreenProps) {
 
   // 点击 dots 跳转到指定页
   const goToPage = (index: number) => {
-    scrollRef.current?.scrollTo({ x: index * SCREEN_WIDTH, animated: true });
+    scrollRef.current?.scrollTo({ x: index * width, animated: true });
     setPageIndex(index);
   };
 
@@ -105,7 +104,7 @@ const styles = StyleSheet.create({
     flexGrow: 1,
   },
   page: {
-    width: SCREEN_WIDTH,
+    // width 由 useWindowDimensions 动态注入（响应 iPad 分屏）
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',

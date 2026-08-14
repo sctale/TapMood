@@ -12,12 +12,18 @@ interface ToastProps {
   duration?: number;
 }
 
-export default function Toast({ message, type = 'success', visible, onHide, duration = 1800 }: ToastProps) {
+export default React.memo(function Toast({ message, type = 'success', visible, onHide, duration = 1800 }: ToastProps) {
   const opacity = useRef(new Animated.Value(0)).current;
   const translateY = useRef(new Animated.Value(-20)).current;
+  // 用 ref 保存最新 onHide，避免其引用变化重置定时器（父组件内联函数会导致 Toast 永不消失）
+  const onHideRef = useRef(onHide);
+  onHideRef.current = onHide;
 
   useEffect(() => {
     if (visible) {
+      // 重置初始值，避免快速显隐时动画从中途值开始
+      opacity.setValue(0);
+      translateY.setValue(-20);
       Animated.parallel([
         Animated.timing(opacity, {
           toValue: 1,
@@ -45,12 +51,12 @@ export default function Toast({ message, type = 'success', visible, onHide, dura
             duration: 200,
             useNativeDriver: true,
           }),
-        ]).start(() => onHide());
+        ]).start(() => onHideRef.current());
       }, duration);
 
       return () => clearTimeout(timer);
     }
-  }, [visible, message, duration, onHide]);
+  }, [visible, message, duration, opacity, translateY]);
 
   if (!visible) return null;
 
@@ -69,7 +75,7 @@ export default function Toast({ message, type = 'success', visible, onHide, dura
       </View>
     </Animated.View>
   );
-}
+});
 
 const styles = StyleSheet.create({
   container: {

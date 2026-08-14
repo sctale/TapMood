@@ -10,6 +10,13 @@ import MoodBarChart from '../components/MoodBarChart';
 import MoodTrendChart from '../components/MoodTrendChart';
 import { useMoodStats, useMoodRange } from '../hooks/useMood';
 
+// 周期选项（静态数据，模块级常量避免每次渲染重建）
+const PERIOD_TABS: { key: AnalysisPeriod; label: string }[] = [
+  { key: 'week', label: '本周' },
+  { key: 'month', label: '本月' },
+  { key: 'year', label: '本年' },
+];
+
 export default function AnalysisScreen() {
   const [period, setPeriod] = useState<AnalysisPeriod>('month');
   const [chartType, setChartType] = useState<'pie' | 'bar' | 'trend'>('pie');
@@ -28,18 +35,20 @@ export default function AnalysisScreen() {
     return () => sub.remove();
   }, []);
 
-  const getDateRange = useCallback(() => {
+  // useMemo 缓存日期范围，避免每次渲染重复计算
+  const { start, end } = useMemo(() => {
     switch (period) {
       case 'week': return getWeekRange();
       case 'month': return getMonthRange();
       case 'year': return getYearRange();
     }
   }, [period]);
-
-  const { start, end } = getDateRange();
   const { stats, loading, error } = useMoodStats(start, end);
-  // 趋势图需要范围内的记录数组
-  const { records: rangeRecords } = useMoodRange(start, end);
+  // 趋势图需要范围内的记录数组（loading/error 需合并判断，避免 trend 分支渲染空白）
+  const { records: rangeRecords, loading: rangeLoading, error: rangeError } = useMoodRange(start, end);
+  // 趋势图依赖 range 数据，loading/error 与 stats 的合并
+  const trendLoading = loading || rangeLoading;
+  const trendError = error || rangeError;
 
   // 根据心情比例生成温馨小提示
   const tip = useMemo(() => getMoodTip(stats, period), [stats, period]);
@@ -72,17 +81,15 @@ export default function AnalysisScreen() {
       DeviceEventEmitter.addListener(MOOD_EVENTS.RECORDED, () => {
         loadGlobalStats();
       }),
+      // 导入数据后刷新全局统计（否则 streak/最长连续/总记录不更新）
+      DeviceEventEmitter.addListener(MOOD_EVENTS.DATA_IMPORTED, () => {
+        loadGlobalStats();
+      }),
     ];
     return () => {
       subscriptions.forEach((sub) => sub.remove());
     };
   }, [loadGlobalStats]);
-
-  const periodTabs: { key: AnalysisPeriod; label: string }[] = [
-    { key: 'week', label: '本周' },
-    { key: 'month', label: '本月' },
-    { key: 'year', label: '本年' },
-  ];
 
   return (
     <View style={styles.container}>
@@ -90,7 +97,7 @@ export default function AnalysisScreen() {
         {/* 周期选择 */}
         <View style={styles.section}>
           <View style={styles.periodTabs}>
-            {periodTabs.map((tab) => (
+            {PERIOD_TABS.map((tab) => (
               <TouchableOpacity
                 key={tab.key}
                 style={[styles.periodTab, period === tab.key && styles.periodTabActive]}
@@ -126,7 +133,7 @@ export default function AnalysisScreen() {
         {/* 图表区域 */}
         <View style={styles.section}>
           <View style={styles.chartHeader}>
-            <Text style={styles.sectionTitle}>{periodTabs.find(t => t.key === period)?.label}心情分布</Text>
+            <Text style={styles.sectionTitle}>{PERIOD_TABS.find(t => t.key === period)?.label}心情分布</Text>
             <View style={styles.chartToggle}>
               <TouchableOpacity
                 style={[styles.toggleBtn, chartType === 'pie' && styles.toggleBtnActive]}
@@ -149,10 +156,10 @@ export default function AnalysisScreen() {
             </View>
           </View>
 
-          {loading ? (
+          {(chartType === 'trend' ? trendLoading : loading) ? (
             <Text style={styles.emptyText}>加载中...</Text>
-          ) : error ? (
-            <Text style={styles.emptyText}>{error}</Text>
+          ) : (chartType === 'trend' ? trendError : error) ? (
+            <Text style={styles.emptyText}>{chartType === 'trend' ? trendError : error}</Text>
           ) : stats.total === 0 ? (
             <View style={styles.emptyState}>
               <Text style={styles.emptyEmoji}>🌱</Text>

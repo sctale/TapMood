@@ -36,6 +36,8 @@ export default React.memo(function MonthView({ year, month, records, onDatePress
   }
 
   const today = formatDate(new Date());
+  // 循环外计算一次（避免每个 cell 重复创建 Date 对象）
+  const now = new Date();
 
   return (
     <View style={styles.container}>
@@ -55,7 +57,7 @@ export default React.memo(function MonthView({ year, month, records, onDatePress
             const dateStr = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
             const record = recordMap.get(dateStr);
             const isToday = dateStr === today;
-            const isFuture = new Date(year, month - 1, day) > new Date();
+            const isFuture = new Date(year, month - 1, day) > now;
 
             return (
               <TouchableOpacity

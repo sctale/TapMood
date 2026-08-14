@@ -1,5 +1,29 @@
 # 更新日志
 
+## [0.3.42] - 2026-08-01
+
+### 修复
+- **导入数据后分析页不刷新**：AnalysisScreen 补充监听 `DATA_IMPORTED` 事件，导入后全局统计（连续打卡/最长连续/总记录）自动更新
+- **Toast 可能永不消失**：useEffect 依赖 `onHide` 引用，父组件 re-render 会重置定时器；改为 ref 模式 + SettingsScreen 的 onHide 用 useCallback 稳定引用
+- **年视图未来年份可点击**：isFuture 判断去掉 isCurrentYear 条件（YYYY-MM-DD 字典序比较），未来年份的日期正确禁用
+- **趋势图 Y 轴标签错位 14px**：yLabel 的 top 补上 container paddingVertical 偏移；数据点 key 从索引改为日期
+- **周视图未来日期不禁用**：与月/年视图行为统一（禁用点击 + 降低透明度）
+- **趋势图加载态空白**：trend 分支合并 useMoodRange 的 loading/error 判断
+
+### 优化
+- **useMood hooks 重构**：抽取统一 load 函数消除 refresh/useEffect 重复代码；refresh 补充竞态保护；失败时统一保留旧值
+- **Android 小组件文件写入串行化**：promise 链队列防止并发写入导致过期数据覆盖新数据
+- **withVersionSync 边界校验**：minor/patch ≥ 100 时抛错（防止 versionCode 冲突）；modResults 防御检查
+- **性能**：饼图/柱图/TabItem/Toast 补充 React.memo；TabBar 动画迁移 stiffness/damping；月/周视图循环外计算 today
+- **Onboarding 适配 iPad 分屏**：模块级 SCREEN_WIDTH 改为 useWindowDimensions 响应窗口变化
+- **导出兜底**：通知设置读取失败时用默认值，保证心情记录始终能导出
+- **DateMoodModal 加载闪烁**：不预先清空 currentMood
+
+### 清理
+- **constants/index.ts 清理约 40% 死代码**：删除 SHADOWS 整个对象、RADIUS 5 个未用值、COLORS 9 个未用字段
+- **移除未使用依赖**：expo-linking、react-native-screens（代码零 import，已验证）
+- **.gitignore 修正**：删除误输入的 `--css` 规则；补充 `.claude/`、`*.log`、`*.keystore`、`*.tmp`
+
 ## [0.3.41] - 2026-08-01
 
 ### 修复

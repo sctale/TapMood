@@ -31,6 +31,9 @@ export default React.memo(function WeekView({ currentDate, records, onDatePress 
     days.push(addDays(monday, i));
   }
 
+  // 循环外计算一次（避免每个 cell 重复创建 Date 对象和字符串格式化）
+  const todayStr = formatDate(new Date());
+
   return (
     <View style={styles.container}>
       {/* 星期标题行 */}
@@ -48,7 +51,9 @@ export default React.memo(function WeekView({ currentDate, records, onDatePress 
           const dateStr = formatDate(d);
           const record = recordMap.get(dateStr);
           const moodColor = record ? MOOD_CONFIG[record.mood].color : COLORS.border;
-          const isToday = dateStr === formatDate(new Date());
+          const isToday = dateStr === todayStr;
+          // 未来日期禁用点击（与月/年视图一致），降低透明度区分
+          const isFuture = dateStr > todayStr;
 
           return (
             <TouchableOpacity
@@ -56,13 +61,14 @@ export default React.memo(function WeekView({ currentDate, records, onDatePress 
               style={styles.dayCell}
               onPress={() => onDatePress?.(dateStr)}
               activeOpacity={0.6}
-              disabled={!onDatePress}
+              disabled={!onDatePress || isFuture}
             >
               <View style={[
                 styles.moodBlock,
                 { backgroundColor: moodColor },
                 isToday && record && styles.todayBlockRecorded,
                 isToday && !record && styles.todayBlockEmpty,
+                isFuture && styles.moodBlockFuture,
               ]}>
                 <Text style={[
                   styles.dayNumber,
@@ -116,6 +122,9 @@ const styles = StyleSheet.create({
   todayBlockEmpty: {
     borderWidth: 2,
     borderColor: COLORS.textTertiary,
+  },
+  moodBlockFuture: {
+    opacity: 0.4,
   },
   dayNumber: {
     fontSize: FONT_SIZE.sm,

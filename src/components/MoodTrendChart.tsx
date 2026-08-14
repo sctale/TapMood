@@ -40,7 +40,7 @@ export default React.memo(function MoodTrendChart({ records, startDate, endDate 
       const x = PAD_L + (ms - startMs) / totalMs * PLOT_W;
       // Y 轴反转：bad 在底部，good 在顶部
       const y = PAD_T + PLOT_H - (MOOD_VALUE[r.mood] / 2) * PLOT_H;
-      return { x, y, mood: r.mood };
+      return { x, y, mood: r.mood, date: r.date };
     });
   }, [records, startDate, endDate]);
 
@@ -89,10 +89,10 @@ export default React.memo(function MoodTrendChart({ records, startDate, endDate 
           />
         )}
 
-        {/* 数据点 */}
-        {points.map((p, i) => (
+        {/* 数据点（key 用日期，避免排序变化时 Circle 错配） */}
+        {points.map(p => (
           <Circle
-            key={i}
+            key={p.date}
             cx={p.x}
             cy={p.y}
             r={3}
@@ -103,11 +103,12 @@ export default React.memo(function MoodTrendChart({ records, startDate, endDate 
         ))}
       </Svg>
 
-      {/* Y 轴标签（用绝对定位的 RN Text 替代 SVG Text，避免类型问题） */}
+      {/* Y 轴标签（用绝对定位的 RN Text 替代 SVG Text，避免类型问题）
+          top 需加上 container paddingVertical: 8 的偏移，否则标签比参考线偏上 */}
       {yLabels.map(item => (
         <Text
           key={item.value}
-          style={[styles.yLabel, { top: getY(item.value) - 6 }]}
+          style={[styles.yLabel, { top: getY(item.value) - 6 + 8 }]}
         >
           {item.label}
         </Text>

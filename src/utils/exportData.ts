@@ -22,7 +22,13 @@ export async function exportMoodData(): Promise<{ success: boolean; count: numbe
       return { success: false, count: 0, error: '暂无数据可导出' };
     }
 
-    const notificationSettings = await getNotificationSettings();
+    // 通知设置是附属数据，读取失败时用默认值兜底（保证心情记录始终能导出）
+    let notificationSettings: NotificationSettings = { enabled: false, hour: 21, minute: 0 };
+    try {
+      notificationSettings = await getNotificationSettings();
+    } catch {
+      // 读取失败保持默认值
+    }
     const backup: MoodBackup = {
       version: JSON_BACKUP_VERSION,
       exportedAt: new Date().toISOString(),

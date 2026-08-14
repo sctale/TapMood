@@ -34,12 +34,11 @@ export function useTodayMood() {
     }, 3000);
 
     try {
-      setError(null);
       const record = await moodDB.recordMood(level);
       setMood(record);
       return record;
     } catch (e) {
-      setError('记录心情失败');
+      // 错误统一由调用方处理（throw），避免 setError + throw 双重处理
       throw e;
     } finally {
       clearTimeout(safetyTimeout);
@@ -56,40 +55,34 @@ export function useMoodRange(startDate: string, endDate: string) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const refresh = useCallback(async () => {
+  // 统一的加载函数：refresh 和 useEffect 共用，带竞态取消
+  const load = useCallback(async (isCancelled: () => boolean) => {
     setLoading(true);
     try {
       setError(null);
       const data = await moodDB.getMoodRange(startDate, endDate);
-      setRecords(data);
+      if (!isCancelled()) setRecords(data);
     } catch (e) {
-      setError('加载记录失败');
-      setRecords([]);
+      if (!isCancelled()) {
+        setError('加载记录失败');
+        // 失败时保留旧值，通过 error 状态标注数据可能过时
+      }
     } finally {
-      setLoading(false);
+      if (!isCancelled()) setLoading(false);
     }
   }, [startDate, endDate]);
 
   // 参数变化时自动加载，带竞态取消
   useEffect(() => {
     let isCancelled = false;
-    (async () => {
-      setLoading(true);
-      try {
-        setError(null);
-        const data = await moodDB.getMoodRange(startDate, endDate);
-        if (!isCancelled) setRecords(data);
-      } catch (e) {
-        if (!isCancelled) {
-          setError('加载记录失败');
-          setRecords([]);
-        }
-      } finally {
-        if (!isCancelled) setLoading(false);
-      }
-    })();
+    load(() => isCancelled);
     return () => { isCancelled = true; };
-  }, [startDate, endDate]);
+  }, [load]);
+
+  const refresh = useCallback(async () => {
+    let isCancelled = false;
+    await load(() => isCancelled);
+  }, [load]);
 
   return { records, loading, error, refresh };
 }
@@ -100,36 +93,34 @@ export function useMoodStats(startDate: string, endDate: string) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const refresh = useCallback(async () => {
+  // 统一的加载函数：refresh 和 useEffect 共用，带竞态取消
+  const load = useCallback(async (isCancelled: () => boolean) => {
     setLoading(true);
     try {
       setError(null);
       const data = await moodDB.getMoodStats(startDate, endDate);
-      setStats(data);
+      if (!isCancelled()) setStats(data);
     } catch (e) {
-      setError('加载统计数据失败');
+      if (!isCancelled()) {
+        setError('加载统计数据失败');
+        // 失败时保留旧值，通过 error 状态标注数据可能过时
+      }
     } finally {
-      setLoading(false);
+      if (!isCancelled()) setLoading(false);
     }
   }, [startDate, endDate]);
 
   // 参数变化时自动加载，带竞态取消
   useEffect(() => {
     let isCancelled = false;
-    (async () => {
-      setLoading(true);
-      try {
-        setError(null);
-        const data = await moodDB.getMoodStats(startDate, endDate);
-        if (!isCancelled) setStats(data);
-      } catch (e) {
-        if (!isCancelled) setError('加载统计数据失败');
-      } finally {
-        if (!isCancelled) setLoading(false);
-      }
-    })();
+    load(() => isCancelled);
     return () => { isCancelled = true; };
-  }, [startDate, endDate]);
+  }, [load]);
+
+  const refresh = useCallback(async () => {
+    let isCancelled = false;
+    await load(() => isCancelled);
+  }, [load]);
 
   return { stats, loading, error, refresh };
 }

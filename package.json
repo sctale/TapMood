@@ -1,6 +1,6 @@
 {
   "name": "tapmood",
-  "version": "0.3.41",
+  "version": "0.3.42",
   "main": "index.ts",
   "dependencies": {
     "@react-native-async-storage/async-storage": "~2.1.0",
@@ -9,7 +9,6 @@
     "expo-document-picker": "^56.0.4",
     "expo-file-system": "~56.0.8",
     "expo-haptics": "~56.0.3",
-    "expo-linking": "~56.0.14",
     "expo-notifications": "~56.0.18",
     "expo-sharing": "~56.0.18",
     "expo-splash-screen": "^56.0.10",
@@ -20,7 +19,6 @@
     "react": "19.2.3",
     "react-native": "0.85.3",
     "react-native-safe-area-context": "~5.7.0",
-    "react-native-screens": "4.25.2",
     "react-native-svg": "15.15.4"
   },
   "devDependencies": {

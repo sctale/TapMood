@@ -99,7 +99,7 @@ const sparseTips: Record<AnalysisPeriod, MoodTip[]> = {
 
 // ---- 辅助函数 ----
 
-// 简易伪随机（基于日期+周期，同一天同一周期看到同一条）
+// 简易伪随机（基于周期+记录总数，同一统计状态下返回同一条，避免每次渲染提示跳变）
 function seededIndex(seed: string, length: number): number {
   let hash = 0;
   for (let i = 0; i < seed.length; i++) {

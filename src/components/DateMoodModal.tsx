@@ -20,9 +20,9 @@ export default function DateMoodModal({ visible, date, onClose, onRecorded }: Da
   const recordingRef = useRef(false);
 
   // 加载该日期的心情
+  // 不预先清空 currentMood，避免重开 Modal 时先闪"无记录"再跳变为已记录
   useEffect(() => {
     if (!visible || !date) return;
-    setCurrentMood(null);
     let isCancelled = false;
     (async () => {
       try {

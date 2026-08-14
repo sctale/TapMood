@@ -9,7 +9,7 @@ interface MoodBarChartProps {
   height?: number;
 }
 
-export default function MoodBarChart({ stats, height = 160 }: MoodBarChartProps) {
+export default React.memo(function MoodBarChart({ stats, height = 160 }: MoodBarChartProps) {
   const maxValue = Math.max(stats.bad, stats.okay, stats.good, 1);
   const chartWidth = 240;
   const barWidth = 48;
@@ -85,7 +85,7 @@ export default function MoodBarChart({ stats, height = 160 }: MoodBarChartProps)
       )}
     </View>
   );
-}
+});
 
 const styles = StyleSheet.create({
   container: {

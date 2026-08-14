@@ -32,9 +32,19 @@ module.exports = (config) => {
   const major = parseInt(majorStr, 10);
   const minor = parseInt(minorStr, 10);
   const patch = parseInt(patchStr, 10);
+  // 公式隐含 minor/patch < 100 约束，超出会导致 versionCode 冲突
+  // 例：0.3.100 → 400 与 0.4.0 → 400 冲突，Play Store 拒绝上传
+  if (minor >= 100 || patch >= 100) {
+    throw new Error(
+      `withVersionSync: minor/patch 必须 < 100（当前 ${major}.${minor}.${patch}），否则 versionCode 会冲突`
+    );
+  }
   const versionCode = major * 10000 + minor * 100 + patch;
 
   return withAppBuildGradle(config, (config) => {
+    if (!config.modResults?.contents) {
+      throw new Error('withVersionSync: 无法读取 build.gradle 内容');
+    }
     let contents = config.modResults.contents;
     // 匹配 build.gradle 中的 versionCode（兼容 "versionCode 312" 和 "versionCode = 312" 两种写法）
     const regex = /versionCode\s*=?\s*\d+/;

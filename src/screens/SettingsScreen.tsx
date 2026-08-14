@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { View, Text, StyleSheet, Switch, TouchableOpacity, Alert, Modal, Pressable, ScrollView, TextInput, Linking, DeviceEventEmitter } from 'react-native';
 import * as Notifications from 'expo-notifications';
 import Constants from 'expo-constants';
@@ -250,6 +250,11 @@ export default function SettingsScreen() {
   const showToast = (message: string, type: 'success' | 'error' | 'info' = 'success') => {
     setToast({ visible: true, message, type });
   };
+
+  // 隐藏 Toast（useCallback 稳定引用，避免 Toast 的 useEffect 因 onHide 变化重置定时器）
+  const hideToast = useCallback(() => {
+    setToast((prev) => ({ ...prev, visible: false }));
+  }, []);
 
   // 导入数据：先选策略，再选文件
   const handleImport = () => {
@@ -511,7 +516,7 @@ export default function SettingsScreen() {
         visible={toast.visible}
         message={toast.message}
         type={toast.type}
-        onHide={() => setToast((prev) => ({ ...prev, visible: false }))}
+        onHide={hideToast}
       />
     </View>
   );
