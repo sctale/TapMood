@@ -315,19 +315,19 @@ const WIDGET_LAYOUT = `<?xml version="1.0" encoding="utf-8"?>
     <ImageView android:id="@+id/btn_bad" android:layout_width="0dp"
         android:layout_height="match_parent" android:layout_weight="1"
         android:src="@drawable/ic_mood_bad" android:scaleType="centerInside"
-        android:background="@drawable/widget_btn_bad" android:layout_margin="3dp"
+        android:layout_margin="3dp"
         android:contentDescription="差" />
 
     <ImageView android:id="@+id/btn_okay" android:layout_width="0dp"
         android:layout_height="match_parent" android:layout_weight="1"
         android:src="@drawable/ic_mood_okay" android:scaleType="centerInside"
-        android:background="@drawable/widget_btn_okay" android:layout_margin="3dp"
+        android:layout_margin="3dp"
         android:contentDescription="中" />
 
     <ImageView android:id="@+id/btn_good" android:layout_width="0dp"
         android:layout_height="match_parent" android:layout_weight="1"
         android:src="@drawable/ic_mood_good" android:scaleType="centerInside"
-        android:background="@drawable/widget_btn_good" android:layout_margin="3dp"
+        android:layout_margin="3dp"
         android:contentDescription="好" />
 </LinearLayout>`;
 
@@ -352,31 +352,29 @@ const WIDGET_INFO = `<?xml version="1.0" encoding="utf-8"?>
     android:widgetCategory="home_screen" />`;
 
 // ============================================================
-// 极简矢量图标 - 精致圆形 + 简笔表情
-// 设计理念：与 App 内心情色统一（靛蓝/琥珀/薄荷绿）
-// 差：淡靛蓝圆 + 圆点眼 + 下弯嘴
-// 中：暖琥珀圆 + 圆点眼 + 直线嘴
-// 好：薄荷绿圆 + 弯弯笑眼 + 上弯嘴
+// 实心彩色圆图标 - 主色圆底 + 加粗表情
+// 设计理念：底色与 App 内 MOOD_CONFIG 主色一致（靛蓝/琥珀/薄荷绿），
+// 笔画色按底色亮度适配（白/深棕/深绿），小尺寸下清晰可辨
+// 差：靛蓝圆 + 白色圆点眼 + 下弯嘴
+// 中：琥珀圆 + 深棕圆点眼 + 直线嘴
+// 好：薄荷绿圆 + 深绿笑眼 + 上弯嘴
 // ============================================================
 const IC_MOOD_BAD = `<?xml version="1.0" encoding="utf-8"?>
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="40dp" android:height="40dp"
     android:viewportWidth="40" android:viewportHeight="40">
-    <!-- 圆形背景 -->
-    <path android:pathData="M20,20m-16,0a16,16 0,1 1,32 0a16,16 0,1 1,-32 0"
-        android:fillColor="#E8EAF6"/>
-    <!-- 圆形描边 -->
-    <path android:pathData="M20,20m-16,0a16,16 0,1 1,32 0a16,16 0,1 1,-32 0"
-        android:strokeColor="#C5CAE9" android:strokeWidth="1" android:fillColor="@android:color/transparent"/>
+    <!-- 实色圆底（主色） -->
+    <path android:pathData="M20,20m-17,0a17,17 0,1 1,34 0a17,17 0,1 1,-34 0"
+        android:fillColor="#7986CB"/>
     <!-- 左眼 - 圆点 -->
-    <path android:pathData="M14.5,15.5m-1.5,0a1.5,1.5 0,1 1,3 0a1.5,1.5 0,1 1,-3 0"
-        android:fillColor="#7986CB"/>
+    <path android:pathData="M14.5,16m-2.4,0a2.4,2.4 0,1 1,4.8 0a2.4,2.4 0,1 1,-4.8 0"
+        android:fillColor="#FFFFFF"/>
     <!-- 右眼 - 圆点 -->
-    <path android:pathData="M25.5,15.5m-1.5,0a1.5,1.5 0,1 1,3 0a1.5,1.5 0,1 1,-3 0"
-        android:fillColor="#7986CB"/>
+    <path android:pathData="M25.5,16m-2.4,0a2.4,2.4 0,1 1,4.8 0a2.4,2.4 0,1 1,-4.8 0"
+        android:fillColor="#FFFFFF"/>
     <!-- 下弯嘴 -->
-    <path android:pathData="M14.5,27 Q20,22.5 25.5,27"
-        android:strokeColor="#7986CB" android:strokeWidth="1.8"
+    <path android:pathData="M13.5,26.5 Q20,20 26.5,26.5"
+        android:strokeColor="#FFFFFF" android:strokeWidth="3"
         android:strokeLineCap="round" android:fillColor="@android:color/transparent"/>
 </vector>`;
 
@@ -384,21 +382,18 @@ const IC_MOOD_OKAY = `<?xml version="1.0" encoding="utf-8"?>
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="40dp" android:height="40dp"
     android:viewportWidth="40" android:viewportHeight="40">
-    <!-- 圆形背景 -->
-    <path android:pathData="M20,20m-16,0a16,16 0,1 1,32 0a16,16 0,1 1,-32 0"
-        android:fillColor="#FFF3E0"/>
-    <!-- 圆形描边 -->
-    <path android:pathData="M20,20m-16,0a16,16 0,1 1,32 0a16,16 0,1 1,-32 0"
-        android:strokeColor="#FFE0B2" android:strokeWidth="1" android:fillColor="@android:color/transparent"/>
+    <!-- 实色圆底（主色） -->
+    <path android:pathData="M20,20m-17,0a17,17 0,1 1,34 0a17,17 0,1 1,-34 0"
+        android:fillColor="#FFB74D"/>
     <!-- 左眼 - 圆点 -->
-    <path android:pathData="M14.5,16m-1.5,0a1.5,1.5 0,1 1,3 0a1.5,1.5 0,1 1,-3 0"
-        android:fillColor="#FFB74D"/>
+    <path android:pathData="M14.5,16m-2.4,0a2.4,2.4 0,1 1,4.8 0a2.4,2.4 0,1 1,-4.8 0"
+        android:fillColor="#5D4037"/>
     <!-- 右眼 - 圆点 -->
-    <path android:pathData="M25.5,16m-1.5,0a1.5,1.5 0,1 1,3 0a1.5,1.5 0,1 1,-3 0"
-        android:fillColor="#FFB74D"/>
+    <path android:pathData="M25.5,16m-2.4,0a2.4,2.4 0,1 1,4.8 0a2.4,2.4 0,1 1,-4.8 0"
+        android:fillColor="#5D4037"/>
     <!-- 直线嘴 -->
-    <path android:pathData="M15,25 L25,25"
-        android:strokeColor="#FFB74D" android:strokeWidth="1.8"
+    <path android:pathData="M14,25.5 L26,25.5"
+        android:strokeColor="#5D4037" android:strokeWidth="3"
         android:strokeLineCap="round"/>
 </vector>`;
 
@@ -406,32 +401,22 @@ const IC_MOOD_GOOD = `<?xml version="1.0" encoding="utf-8"?>
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="40dp" android:height="40dp"
     android:viewportWidth="40" android:viewportHeight="40">
-    <!-- 圆形背景 -->
-    <path android:pathData="M20,20m-16,0a16,16 0,1 1,32 0a16,16 0,1 1,-32 0"
-        android:fillColor="#E8F5E9"/>
-    <!-- 圆形描边 -->
-    <path android:pathData="M20,20m-16,0a16,16 0,1 1,32 0a16,16 0,1 1,-32 0"
-        android:strokeColor="#C8E6C9" android:strokeWidth="1" android:fillColor="@android:color/transparent"/>
+    <!-- 实色圆底（主色） -->
+    <path android:pathData="M20,20m-17,0a17,17 0,1 1,34 0a17,17 0,1 1,-34 0"
+        android:fillColor="#81C784"/>
     <!-- 左眼 - 弯弯笑眼 -->
-    <path android:pathData="M12,17 Q14.5,13 17,17"
-        android:strokeColor="#81C784" android:strokeWidth="1.8"
+    <path android:pathData="M12,17.5 Q14.75,13.5 17.5,17.5"
+        android:strokeColor="#1B5E20" android:strokeWidth="3"
         android:strokeLineCap="round" android:fillColor="@android:color/transparent"/>
     <!-- 右眼 - 弯弯笑眼 -->
-    <path android:pathData="M23,17 Q25.5,13 28,17"
-        android:strokeColor="#81C784" android:strokeWidth="1.8"
+    <path android:pathData="M22.5,17.5 Q25.25,13.5 28,17.5"
+        android:strokeColor="#1B5E20" android:strokeWidth="3"
         android:strokeLineCap="round" android:fillColor="@android:color/transparent"/>
     <!-- 上弯嘴 -->
-    <path android:pathData="M14.5,24 Q20,30 25.5,24"
-        android:strokeColor="#81C784" android:strokeWidth="1.8"
+    <path android:pathData="M13.5,23.5 Q20,30.5 26.5,23.5"
+        android:strokeColor="#1B5E20" android:strokeWidth="3"
         android:strokeLineCap="round" android:fillColor="@android:color/transparent"/>
 </vector>`;
-
-// ============================================================
-// 按钮背景 - 极简圆角矩形，带微妙色彩倾向
-// ============================================================
-const DRAWABLE_BTN_BAD = `<?xml version="1.0" encoding="utf-8"?><shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle"><solid android:color="#E8EAF6"/><corners android:radius="12dp"/></shape>`;
-const DRAWABLE_BTN_OKAY = `<?xml version="1.0" encoding="utf-8"?><shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle"><solid android:color="#FFF3E0"/><corners android:radius="12dp"/></shape>`;
-const DRAWABLE_BTN_GOOD = `<?xml version="1.0" encoding="utf-8"?><shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle"><solid android:color="#E8F5E9"/><corners android:radius="12dp"/></shape>`;
 
 // ============================================================
 // 背景透明度等级（使用系统标准圆角 v31+，兼容旧版 20dp）
@@ -574,11 +559,6 @@ function withAndroidWidget(config) {
     writeFile(path.join(resDir, 'drawable'), 'ic_mood_okay.xml', IC_MOOD_OKAY);
     writeFile(path.join(resDir, 'drawable'), 'ic_mood_good.xml', IC_MOOD_GOOD);
 
-    // 按钮背景
-    writeFile(path.join(resDir, 'drawable'), 'widget_btn_bad.xml', DRAWABLE_BTN_BAD);
-    writeFile(path.join(resDir, 'drawable'), 'widget_btn_okay.xml', DRAWABLE_BTN_OKAY);
-    writeFile(path.join(resDir, 'drawable'), 'widget_btn_good.xml', DRAWABLE_BTN_GOOD);
-
     // 背景透明度 - 默认版本（兼容旧版，固定 20dp 圆角）
     writeFile(path.join(resDir, 'drawable'), 'widget_bg_0.xml', DRAWABLE_BG_0);
     writeFile(path.join(resDir, 'drawable'), 'widget_bg_25.xml', DRAWABLE_BG_25);
@@ -608,6 +588,9 @@ function withAndroidWidget(config) {
       path.join(resDir, 'xml', 'mood_widget_info_2x1.xml'),
       path.join(resDir, 'drawable', 'widget_dot.xml'),
       path.join(resDir, 'drawable', 'widget_background.xml'),
+      path.join(resDir, 'drawable', 'widget_btn_bad.xml'),
+      path.join(resDir, 'drawable', 'widget_btn_okay.xml'),
+      path.join(resDir, 'drawable', 'widget_btn_good.xml'),
       path.join(resDir, 'values', 'strings_widget.xml'),
       path.join(javaDir, 'MoodWidgetProvider.java'),
       path.join(javaDir, 'MoodWidget4x1.java'),
