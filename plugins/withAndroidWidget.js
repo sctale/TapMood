@@ -48,40 +48,13 @@ const JAVA_UTILS = `
         return !getTodayRecordedMood(context).isEmpty();
     }
 
-    // 读取今日连续打卡天数（widget_state.json 由 JS 侧写入），无记录返回 0
-    private int getTodayStreak(Context context) {
-        try {
-            java.io.File file = new java.io.File(context.getFilesDir(), "widget_state.json");
-            if (!file.exists()) return 0;
-            try (java.io.BufferedReader reader = new java.io.BufferedReader(new java.io.FileReader(file))) {
-                StringBuilder sb = new StringBuilder();
-                String line;
-                while ((line = reader.readLine()) != null) sb.append(line);
-                return new org.json.JSONObject(sb.toString()).optInt("streak", 0);
-            }
-        } catch (Exception e) { return 0; }
-    }
-
     // 已记录反馈：已记录的按钮全亮，其余两个降低透明度（setImageAlpha API 16+）
-    // 状态区显示：已记录显示 🔥连续天数，未记录显示提示点
     private void applyRecordedState(Context context, RemoteViews views) {
         String mood = getTodayRecordedMood(context);
         int dimAlpha = 100; // 未记录到的心情按钮透明度（约 40%）
         views.setInt(R.id.btn_bad, "setImageAlpha", "bad".equals(mood) ? 255 : dimAlpha);
         views.setInt(R.id.btn_okay, "setImageAlpha", "okay".equals(mood) ? 255 : dimAlpha);
         views.setInt(R.id.btn_good, "setImageAlpha", "good".equals(mood) ? 255 : dimAlpha);
-
-        int streak = getTodayStreak(context);
-        if (!mood.isEmpty() && streak > 0) {
-            views.setTextViewText(R.id.widget_status, "🔥" + streak);
-            views.setTextColor(R.id.widget_status, 0xFF2D2D2D);
-        } else if (!mood.isEmpty()) {
-            views.setTextViewText(R.id.widget_status, "✓");
-            views.setTextColor(R.id.widget_status, 0xFF6E6E6E);
-        } else {
-            views.setTextViewText(R.id.widget_status, "···");
-            views.setTextColor(R.id.widget_status, 0xFF9E9E9E);
-        }
     }
 
     private int getBgAlphaLevel(Context context) {
@@ -338,14 +311,6 @@ const WIDGET_LAYOUT = `<?xml version="1.0" encoding="utf-8"?>
     android:paddingTop="4dp"
     android:paddingBottom="4dp"
     android:gravity="center_vertical">
-
-    <!-- 状态区：已记录显示 🔥连续天数 / ✓，未记录显示 ··· -->
-    <TextView android:id="@+id/widget_status" android:layout_width="wrap_content"
-        android:layout_height="match_parent" android:minWidth="36dp"
-        android:gravity="center" android:textSize="13sp" android:textStyle="bold"
-        android:text="···" android:textColor="#9E9E9E"
-        android:layout_marginEnd="4dp"
-        android:contentDescription="今日状态" />
 
     <ImageView android:id="@+id/btn_bad" android:layout_width="0dp"
         android:layout_height="match_parent" android:layout_weight="1"
