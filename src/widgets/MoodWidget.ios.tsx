@@ -1,5 +1,5 @@
 import { createWidget, addUserInteractionListener } from 'expo-widgets';
-import { View, Text } from 'react-native';
+import { View, Text, DeviceEventEmitter } from 'react-native';
 import * as moodDB from '../database/moodDB';
 import { MOOD_CONFIG } from '../constants';
 import type { MoodLevel } from '../types';
@@ -84,6 +84,8 @@ const moodWidget = createWidget<MoodWidgetProps>('MoodWidget', (props, environme
 });
 
 // 监听小组件交互事件
+// 不直接写库，改为 emit 事件复用 HomeScreen.handleMoodSelect 完整链路
+// （今日心情/日历/streak 刷新 + 通知重调度 + RECORDED 事件 + Toast），与 Android Deep Link 收敛同一入口
 let isProcessingWidgetInteraction = false;
 export function setupWidgetInteractionListener() {
   return addUserInteractionListener(async (event) => {
@@ -95,16 +97,15 @@ export function setupWidgetInteractionListener() {
     isProcessingWidgetInteraction = true;
 
     try {
-      // 检查今日是否已记录心情（与 Android 行为一致）
+      // 检查今日是否已记录心情（与 Android 行为一致）：已记录仅刷新小组件，不重复记录
       const todayMood = await moodDB.getTodayMood();
       if (todayMood) {
-        // 今日已记录，仅刷新小组件显示，不重复记录
         await updateMoodWidget();
         return;
       }
 
-      await moodDB.recordMood(mood);
-      await updateMoodWidget();
+      // emit 到 HomeScreen 的记录链路（含 UI 刷新/通知调度/Toast）
+      DeviceEventEmitter.emit('recordMoodFromWidget', { mood });
     } catch {
       // 数据库未初始化或写入失败时静默忽略
     } finally {

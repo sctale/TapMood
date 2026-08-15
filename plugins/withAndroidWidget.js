@@ -17,6 +17,7 @@
 const {
   withDangerousMod,
   withAndroidManifest,
+  withMainActivity,
 } = require('expo/config-plugins');
 const fs = require('fs');
 const path = require('path');
@@ -25,10 +26,11 @@ const path = require('path');
 // 通用 Java 工具方法
 // ============================================================
 const JAVA_UTILS = `
-    private boolean isTodayMoodRecorded(Context context) {
+    // 读取今日已记录的心情（widget_state.json 由 JS 侧写入），未记录返回空串
+    private String getTodayRecordedMood(Context context) {
         try {
             java.io.File file = new java.io.File(context.getFilesDir(), "widget_state.json");
-            if (!file.exists()) return false;
+            if (!file.exists()) return "";
             try (java.io.BufferedReader reader = new java.io.BufferedReader(new java.io.FileReader(file))) {
                 StringBuilder sb = new StringBuilder();
                 String line;
@@ -37,9 +39,22 @@ const JAVA_UTILS = `
                 String date = json.getString("date");
                 String today = new java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.US).format(new java.util.Date());
                 String mood = json.optString("mood", "");
-                return today.equals(date) && !mood.isEmpty();
+                return today.equals(date) ? mood : "";
             }
-        } catch (Exception e) { return false; }
+        } catch (Exception e) { return ""; }
+    }
+
+    private boolean isTodayMoodRecorded(Context context) {
+        return !getTodayRecordedMood(context).isEmpty();
+    }
+
+    // 已记录反馈：已记录的按钮全亮，其余两个降低透明度（setImageAlpha API 16+）
+    private void applyRecordedState(Context context, RemoteViews views) {
+        String mood = getTodayRecordedMood(context);
+        int dimAlpha = 100; // 未记录到的心情按钮透明度（约 40%）
+        views.setInt(R.id.btn_bad, "setImageAlpha", "bad".equals(mood) ? 255 : dimAlpha);
+        views.setInt(R.id.btn_okay, "setImageAlpha", "okay".equals(mood) ? 255 : dimAlpha);
+        views.setInt(R.id.btn_good, "setImageAlpha", "good".equals(mood) ? 255 : dimAlpha);
     }
 
     private int getBgAlphaLevel(Context context) {
@@ -61,6 +76,20 @@ const JAVA_UTILS = `
         if (level >= 0 && level < bgResIds.length) {
             views.setInt(R.id.widget_root, "setBackgroundResource", bgResIds[level]);
         }
+    }
+
+    // 刷新桌面上全部小组件实例（按 ComponentName 定位）
+    static void updateAllWidgets(Context context) {
+        try {
+            AppWidgetManager manager = AppWidgetManager.getInstance(context);
+            int[] ids = manager.getAppWidgetIds(new android.content.ComponentName(context, MoodWidget.class));
+            if (ids != null && ids.length > 0) {
+                Intent update = new Intent(context, MoodWidget.class);
+                update.setAction(AppWidgetManager.ACTION_APPWIDGET_UPDATE);
+                update.putExtra(AppWidgetManager.EXTRA_APPWIDGET_IDS, ids);
+                context.sendBroadcast(update);
+            }
+        } catch (Exception e) { /* 刷新失败静默 */ }
     }
 `;
 
@@ -89,6 +118,8 @@ public class MoodWidget extends AppWidgetProvider {
             RemoteViews views = new RemoteViews(context.getPackageName(), R.layout.mood_widget);
             setupClicks(context, views);
             applyBackground(context, views);
+            // 已记录心情的按钮高亮、其余降低透明度，提供"今日已记录"视觉反馈
+            applyRecordedState(context, views);
             appWidgetManager.updateAppWidget(appWidgetId, views);
         }
     }
@@ -258,7 +289,8 @@ public class WidgetConfigActivity extends Activity {
         if (level >= 0 && level < bgResIds.length) {
             views.setInt(R.id.widget_root, "setBackgroundResource", bgResIds[level]);
         }
-        appWidgetManager.updateAppWidget(appWidgetId, views);
+        // 按 ComponentName 刷新全部实例（原仅刷新单个 appWidgetId，多实例时其余不更新）
+        appWidgetManager.updateAppWidget(new android.content.ComponentName(this, MoodWidget.class), views);
     }
 }
 `;
@@ -316,7 +348,7 @@ const WIDGET_INFO = `<?xml version="1.0" encoding="utf-8"?>
     android:maxResizeWidth="349dp" android:maxResizeHeight="48dp"
     android:resizeMode="horizontal"
     android:targetCellWidth="4" android:targetCellHeight="1"
-    android:updatePeriodMillis="1800000"
+    android:updatePeriodMillis="0"
     android:widgetCategory="home_screen" />`;
 
 // ============================================================
@@ -494,6 +526,32 @@ function withAndroidWidget(config) {
       }];
     }
 
+    return config;
+  });
+
+  // 注入 MainActivity.onResume：APP 回前台时刷新全部小组件
+  // 覆盖"JS 写完 widget_state.json 后原生无感知"的断裂——记录心情回到桌面时按钮高亮即时更新
+  config = withMainActivity(config, (config) => {
+    const onResumeCode = `
+    override fun onResume() {
+        super.onResume()
+        try {
+            MoodWidget.updateAllWidgets(this)
+        } catch (e: Exception) {
+            // 刷新失败静默
+        }
+    }
+`;
+    if (!config.modResults.contents.includes('MoodWidget.updateAllWidgets')) {
+      const contents = config.modResults.contents;
+      // 在类体最后一个 } 前注入（MainActivity.kt 顶层唯一类）
+      const lastBrace = contents.lastIndexOf('}');
+      if (lastBrace === -1) {
+        throw new Error('withAndroidWidget: 无法定位 MainActivity 类体结束位置');
+      }
+      config.modResults.contents =
+        contents.slice(0, lastBrace) + onResumeCode + contents.slice(lastBrace);
+    }
     return config;
   });
 

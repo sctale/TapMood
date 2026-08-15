@@ -106,7 +106,10 @@ export default function DateMoodModal({ visible, date, onClose, onRecorded }: Da
           {currentMood && (
             <View style={[styles.currentMoodBar, { backgroundColor: MOOD_CONFIG[currentMood].color }]}>
               <MoodIcon mood={currentMood} size={24} />
-              <Text style={styles.currentMoodLabel}>心情：{MOOD_CONFIG[currentMood].label}</Text>
+              {/* okay 琥珀底与白字对比度 1.9:1，改深棕保证可读 */}
+              <Text style={[styles.currentMoodLabel, currentMood === 'okay' && styles.currentMoodLabelAmber]}>
+                心情：{MOOD_CONFIG[currentMood].label}
+              </Text>
             </View>
           )}
 
@@ -127,8 +130,13 @@ export default function DateMoodModal({ visible, date, onClose, onRecorded }: Da
                     disabled={loading}
                     activeOpacity={0.7}
                   >
-                    <MoodIcon mood={level} size={32} isSelected={isSelected} />
-                    <Text style={[styles.moodText, { color: isSelected ? COLORS.surface : config.color }]}>
+                    <MoodIcon
+                      mood={level}
+                      size={32}
+                      isSelected={isSelected}
+                      bgOverride={isSelected ? 'rgba(255,255,255,0.3)' : undefined}
+                    />
+                    <Text style={[styles.moodText, { color: isSelected ? (level === 'okay' ? '#5D4037' : COLORS.surface) : config.color }]}>
                       {config.label}
                     </Text>
                   </TouchableOpacity>
@@ -197,6 +205,9 @@ const styles = StyleSheet.create({
     color: COLORS.surface,
     fontWeight: '600',
   },
+  currentMoodLabelAmber: {
+    color: '#5D4037',
+  },
   moodRow: {
     flexDirection: 'row',
     justifyContent: 'center',
@@ -229,7 +240,7 @@ const styles = StyleSheet.create({
   },
   deleteText: {
     fontSize: FONT_SIZE.sm,
-    color: '#E57373',
+    color: '#C62828', // 白底对比度 5.9:1（原 #E57373 仅 3.8:1）
   },
   closeBtn: {
     paddingVertical: SPACING.sm,

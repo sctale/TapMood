@@ -38,7 +38,7 @@ export default React.memo(function YearView({ year, records, onDatePress }: Year
     for (let d = 1; d <= daysInMonth; d++) {
       const dateStr = `${year}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
       const record = recordMap.get(dateStr);
-      const moodColor = record ? MOOD_CONFIG[record.mood].color : COLORS.surface;
+      const moodColor = record ? MOOD_CONFIG[record.mood].color : COLORS.bgAlt;
       // 未来日期禁用点击（含未来年份）
       const isFuture = dateStr > todayStr;
 

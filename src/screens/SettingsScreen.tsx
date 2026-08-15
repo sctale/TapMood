@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { View, Text, StyleSheet, Switch, TouchableOpacity, Alert, Modal, Pressable, ScrollView, TextInput, Linking, DeviceEventEmitter } from 'react-native';
+import { View, Text, StyleSheet, Switch, TouchableOpacity, Alert, Modal, Pressable, ScrollView, TextInput, Linking, DeviceEventEmitter, Platform as RNPlatform } from 'react-native';
 import * as Notifications from 'expo-notifications';
 import Constants from 'expo-constants';
 import Svg, { Path, Circle, Polyline, Ellipse, Rect } from 'react-native-svg';
@@ -11,6 +11,14 @@ import { pickAndImportData, type ImportStrategy } from '../utils/importData';
 import { applyNotificationSettings } from '../utils/notification';
 import TimeWheelPicker from '../components/TimeWheelPicker';
 import Toast from '../components/Toast';
+
+// 平台特定小组件模块（与 App.tsx 相同模式），导入后刷新小组件用
+const widgetModule = RNPlatform.select({
+  ios: () => require('../widgets/MoodWidget.ios'),
+  android: () => require('../widgets/MoodWidget.android'),
+  default: () => require('../widgets/MoodWidget'),
+})();
+const { updateMoodWidget } = widgetModule as { updateMoodWidget: () => Promise<void> };
 
 // 注意：setNotificationHandler 已移至 App.tsx 全局设置（支持智能跳过已记录的提醒）
 
@@ -322,6 +330,13 @@ export default function SettingsScreen() {
       setDbSizeBytes(sizeBytes);
     } catch {
       // 刷新失败静默
+    }
+
+    // 刷新小组件（导入可能改变今日记录/replace 清空今日，小组件需同步）
+    try {
+      await updateMoodWidget();
+    } catch {
+      // 小组件刷新失败静默
     }
   };
 

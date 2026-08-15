@@ -1,9 +1,15 @@
 import React, { useRef, useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Animated, Easing } from 'react-native';
-import Svg, { Defs, LinearGradient, Stop, Circle } from 'react-native-svg';
 import type { MoodLevel } from '../types';
 import { MOOD_CONFIG, MOOD_LEVELS, COLORS, SPACING, FONT_SIZE } from '../constants';
 import MoodIcon from './MoodIcon';
+
+// okay 琥珀底(#FFB74D)与白字对比度仅 1.9:1，改用深棕（对比度 6.8:1）
+const SELECTED_TEXT_COLOR: Record<MoodLevel, string> = {
+  bad: COLORS.surface,
+  okay: '#5D4037',
+  good: COLORS.surface,
+};
 
 interface MoodSelectorProps {
   onMoodSelect: (mood: MoodLevel) => void;
@@ -59,25 +65,20 @@ export default React.memo(function MoodSelector({ onMoodSelect, selectedMood, si
               }}
               activeOpacity={0.85}
             >
-              <MoodIcon mood={level} size={isLarge ? 44 : 30} isSelected={isSelected} />
+              <MoodIcon
+                mood={level}
+                size={isLarge ? 44 : 30}
+                isSelected={isSelected}
+                bgOverride={isSelected ? 'rgba(255,255,255,0.3)' : undefined}
+              />
               <Text style={[
                 styles.moodLabel,
                 isLarge ? styles.moodLabelLarge : styles.moodLabelSmall,
-                { color: isSelected ? COLORS.surface : config.color },
+                { color: isSelected ? SELECTED_TEXT_COLOR[level] : config.color },
               ]}>
                 {config.label}
               </Text>
-              {isSelected && (
-                <Svg width={6} height={6} style={styles.selectedDot}>
-                  <Defs>
-                    <LinearGradient id={`dot-${level}`} x1="0" y1="0" x2="1" y2="1">
-                      <Stop offset="0" stopColor={config.gradientStart} />
-                      <Stop offset="1" stopColor={config.gradientEnd} />
-                    </LinearGradient>
-                  </Defs>
-                  <Circle cx="3" cy="3" r="3" fill={`url(#dot-${level})`} />
-                </Svg>
-              )}
+              {isSelected && <View style={styles.selectedDot} />}
             </TouchableOpacity>
           </Animated.View>
         );
@@ -121,5 +122,9 @@ const styles = StyleSheet.create({
   },
   selectedDot: {
     marginTop: SPACING.xs,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: 'rgba(255,255,255,0.9)',
   },
 });

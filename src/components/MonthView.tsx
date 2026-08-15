@@ -126,7 +126,7 @@ const styles = StyleSheet.create({
     width: 34,
     height: 34,
     borderRadius: 12,
-    backgroundColor: COLORS.border, // 默认背景色，被 style 数组中的条件覆盖
+    backgroundColor: COLORS.bgAlt, // 未记录占位背景（原 border 色在白卡上几乎不可见）
     alignItems: 'center',
     justifyContent: 'center',
   },

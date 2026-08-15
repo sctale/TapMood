@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useEffect, useMemo, useRef } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, RefreshControl, DeviceEventEmitter } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, RefreshControl, DeviceEventEmitter, AppState } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { MoodLevel, CalendarView } from '../types';
@@ -60,6 +60,19 @@ export default function HomeScreen() {
       setStreak(s);
     })();
   }, []);
+
+  // 兜底：APP 从后台回到前台时刷新数据
+  // 覆盖小组件后台记录（iOS emit 事件丢失）、外部修改 DB 等场景
+  useEffect(() => {
+    const subscription = AppState.addEventListener('change', (next) => {
+      if (next === 'active') {
+        refreshToday();
+        refreshRecords();
+        getStreak().then(setStreak).catch(() => {});
+      }
+    });
+    return () => subscription.remove();
+  }, [refreshToday, refreshRecords]);
 
   // 显示Toast提示
   const showToast = useCallback((message: string, type: ToastType = 'success') => {

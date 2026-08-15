@@ -50,7 +50,7 @@ export default React.memo(function WeekView({ currentDate, records, onDatePress 
         {days.map((d, i) => {
           const dateStr = formatDate(d);
           const record = recordMap.get(dateStr);
-          const moodColor = record ? MOOD_CONFIG[record.mood].color : COLORS.border;
+          const moodColor = record ? MOOD_CONFIG[record.mood].color : COLORS.bgAlt;
           const isToday = dateStr === todayStr;
           // 未来日期禁用点击（与月/年视图一致），降低透明度区分
           const isFuture = dateStr > todayStr;
