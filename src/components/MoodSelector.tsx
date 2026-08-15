@@ -1,7 +1,7 @@
 import React, { useRef, useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Animated, Easing } from 'react-native';
 import type { MoodLevel } from '../types';
-import { MOOD_CONFIG, MOOD_LEVELS, COLORS, SPACING, FONT_SIZE } from '../constants';
+import { MOOD_CONFIG, MOOD_LEVELS, COLORS, SPACING, FONT_SIZE, RADIUS } from '../constants';
 import MoodIcon from './MoodIcon';
 
 // okay 琥珀底(#FFB74D)与白字对比度仅 1.9:1，改用深棕（对比度 6.8:1）
@@ -97,7 +97,7 @@ const styles = StyleSheet.create({
   moodButton: {
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: 24,
+    borderRadius: RADIUS.xl,
     borderWidth: 2,
   },
   moodButtonLarge: {
@@ -105,7 +105,7 @@ const styles = StyleSheet.create({
     paddingVertical: SPACING.md,
   },
   moodButtonSmall: {
-    width: 76,
+    flex: 1, // 小屏安全：平分剩余宽度，替代固定 width:76
     height: 92,
     paddingVertical: SPACING.sm,
   },

@@ -1,11 +1,11 @@
 import React, { useState, useCallback, useEffect, useMemo, useRef } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, RefreshControl, DeviceEventEmitter, AppState } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, RefreshControl, DeviceEventEmitter, AppState, Animated, LayoutAnimation, UIManager, Platform } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { MoodLevel, CalendarView } from '../types';
-import { COLORS, SPACING, FONT_SIZE, MOOD_EVENTS } from '../constants';
+import { COLORS, SPACING, FONT_SIZE, MOOD_EVENTS, RADIUS } from '../constants';
 import { useTodayMood, useMoodRange } from '../hooks/useMood';
-import { getStreak } from '../database/moodDB';
+import { getStreak, getTotalRecordCount } from '../database/moodDB';
 import { getWeekRange, getMonthRange, getYearRange, getMonthName, formatDate, getDaysInMonth, isLeapYear, dayOfYear, isSameISOWeek, getMondayOfWeek } from '../utils/dateUtils';
 import { applyNotificationSettings } from '../utils/notification';
 import { getNotificationSettings } from '../database/moodDB';
@@ -20,6 +20,11 @@ import DateMoodModal from '../components/DateMoodModal';
 import Toast, { type ToastType } from '../components/Toast';
 
 export default function HomeScreen() {
+  // Android 开启 LayoutAnimation（viewTab 滑动指示器过渡）
+  if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
+    UIManager.setLayoutAnimationEnabledExperimental(true);
+  }
+
   const [dbReady, setDbReady] = useState(false);
   const [calendarView, setCalendarView] = useState<CalendarView>('month');
   const [viewDate, setViewDate] = useState(new Date());
@@ -27,7 +32,10 @@ export default function HomeScreen() {
   const [modalDate, setModalDate] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [toast, setToast] = useState({ visible: false, message: '', type: 'success' as ToastType });
+  const [isEmpty, setIsEmpty] = useState(false); // 首次使用引导（总记录数为 0）
   const scrollRef = useRef<ScrollView>(null);
+  // 进度条填充动画（width 动画不支持 nativeDriver）
+  const progressAnim = useRef(new Animated.Value(0)).current;
 
   // 切换到本 tab 时滚动到顶部
   useEffect(() => {
@@ -60,6 +68,11 @@ export default function HomeScreen() {
       setStreak(s);
     })();
   }, []);
+
+  // 首次使用引导：总记录数为 0 时显示（依赖 records.length 变化后重查）
+  useEffect(() => {
+    getTotalRecordCount().then((n) => setIsEmpty(n === 0)).catch(() => {});
+  }, [records.length]);
 
   // 兜底：APP 从后台回到前台时刷新数据
   // 覆盖小组件后台记录（iOS emit 事件丢失）、外部修改 DB 等场景
@@ -103,7 +116,7 @@ export default function HomeScreen() {
       // 通知分析页等需要全局统计的页面刷新
       DeviceEventEmitter.emit(MOOD_EVENTS.RECORDED);
       hapticSuccess();
-      showToast('已记录今日心情');
+      showToast('已记录今日心情 ✨');
     } catch (e) {
       hapticError();
       showToast('记录失败，请重试', 'error');
@@ -149,7 +162,7 @@ export default function HomeScreen() {
     const s = await getStreak();
     setStreak(s);
     DeviceEventEmitter.emit(MOOD_EVENTS.RECORDED);
-    showToast('已保存');
+    showToast('已记录心情 ✨');
   }, [refreshRecords, refreshToday, showToast]);
 
   const navigateDate = useCallback((direction: -1 | 1) => {
@@ -167,6 +180,8 @@ export default function HomeScreen() {
   const goToday = useCallback(() => { setViewDate(new Date()); }, []);
 
   const handleViewChange = useCallback((view: CalendarView) => {
+    // tab 指示器平滑过渡（iOS segmented 风格）
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     setCalendarView(view);
   }, []);
 
@@ -221,6 +236,16 @@ export default function HomeScreen() {
     return { recorded: records.length, total, percent, label };
   }, [calendarView, records, viewDate]);
 
+  // 进度条 300ms 平滑填充（周期/数据变化时重新动画）
+  useEffect(() => {
+    progressAnim.setValue(0);
+    Animated.timing(progressAnim, {
+      toValue: periodProgress.percent,
+      duration: 300,
+      useNativeDriver: false, // width 动画必须 JS 驱动
+    }).start();
+  }, [periodProgress.percent, progressAnim]);
+
   if (!dbReady) {
     return (
       <View style={styles.loadingContainer}>
@@ -271,12 +296,30 @@ export default function HomeScreen() {
             <Text style={styles.progressValue}>{periodProgress.recorded}/{periodProgress.total}天</Text>
           </View>
           <View style={styles.progressBar}>
-            <View style={[styles.progressFill, { width: `${periodProgress.percent}%` }]} />
+            <Animated.View
+              style={[
+                styles.progressFill,
+                {
+                  width: progressAnim.interpolate({
+                    inputRange: [0, 100],
+                    outputRange: ['0%', '100%'],
+                  }),
+                },
+              ]}
+            />
           </View>
         </View>
 
         {/* 日历视图区域 */}
         <View style={styles.section}>
+          {/* 首次使用引导 */}
+          {isEmpty && (
+            <View style={styles.guideCard}>
+              <Text style={styles.guideEmoji}>🌱</Text>
+              <Text style={styles.guideTitle}>欢迎来到一点心情</Text>
+              <Text style={styles.guideText}>点击上方的表情，记录你的第一个心情吧</Text>
+            </View>
+          )}
           <View style={styles.viewTabs}>
             {viewTabs.map((tab) => (
               <TouchableOpacity
@@ -312,8 +355,10 @@ export default function HomeScreen() {
           )}
           {calendarView === 'year' && <YearView year={viewDate.getFullYear()} records={records} onDatePress={handleDatePress} />}
 
-          {/* 日历操作提示 */}
-          <Text style={styles.calendarHint}>点击日期可补记或修改心情</Text>
+          {/* 日历操作提示（年视图格子极小，提示文案区分） */}
+          <Text style={styles.calendarHint}>
+            {calendarView === 'year' ? '点击月份色块可补记' : '点击日期可补记或修改心情'}
+          </Text>
         </View>
       </ScrollView>
 
@@ -367,14 +412,14 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.surface,
     marginHorizontal: SPACING.md,
     marginTop: SPACING.md,
-    borderRadius: 16,
+    borderRadius: RADIUS.md,
     padding: SPACING.lg,
   },
   progressSection: {
     backgroundColor: COLORS.surface,
     marginHorizontal: SPACING.md,
     marginTop: SPACING.sm,
-    borderRadius: 20,
+    borderRadius: RADIUS.lg,
     padding: SPACING.md,
   },
   progressHeader: {
@@ -399,21 +444,44 @@ const styles = StyleSheet.create({
   },
   progressFill: {
     height: '100%',
-    backgroundColor: COLORS.good,
+    backgroundColor: COLORS.accent, // 进度≠心情好坏，用中性强调色避免误导
     borderRadius: 3,
   },
   viewTabs: {
     flexDirection: 'row',
     backgroundColor: COLORS.background,
-    borderRadius: 12,
+    borderRadius: RADIUS.sm,
     padding: 3,
     marginBottom: SPACING.md,
   },
+  guideCard: {
+    alignItems: 'center',
+    backgroundColor: COLORS.surfaceAlt,
+    borderRadius: RADIUS.sm,
+    paddingVertical: SPACING.lg,
+    paddingHorizontal: SPACING.md,
+    marginBottom: SPACING.md,
+  },
+  guideEmoji: {
+    fontSize: 36,
+    marginBottom: SPACING.xs,
+  },
+  guideTitle: {
+    fontSize: FONT_SIZE.md,
+    fontWeight: '600',
+    color: COLORS.text,
+    marginBottom: SPACING.xs,
+  },
+  guideText: {
+    fontSize: FONT_SIZE.sm,
+    color: COLORS.textSecondary,
+    textAlign: 'center',
+  },
   viewTab: {
     flex: 1,
-    paddingVertical: SPACING.sm,
+    paddingVertical: 12, // 触摸目标 ≥44dp（12 + 文本行高 ≈44）
     alignItems: 'center',
-    borderRadius: 10,
+    borderRadius: RADIUS.xs,
   },
   viewTabActive: {
     backgroundColor: COLORS.surface,
@@ -438,8 +506,8 @@ const styles = StyleSheet.create({
     marginBottom: SPACING.md,
   },
   navBtn: {
-    width: 40,
-    height: 40,
+    width: 44, // 触摸目标 ≥44dp
+    height: 44,
     alignItems: 'center',
     justifyContent: 'center',
   },

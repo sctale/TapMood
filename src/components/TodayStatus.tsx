@@ -2,7 +2,7 @@ import React, { useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, Animated, Easing, TouchableOpacity, Share, Alert } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 import type { MoodLevel } from '../types';
-import { MOOD_CONFIG, COLORS, SPACING, FONT_SIZE } from '../constants';
+import { MOOD_CONFIG, COLORS, SPACING, FONT_SIZE, RADIUS } from '../constants';
 import MoodIcon from './MoodIcon';
 
 interface TodayStatusProps {
@@ -57,18 +57,25 @@ export default React.memo(function TodayStatus({ mood, streak = 0 }: TodayStatus
 
   useEffect(() => {
     if (!mood) return;
-    // mood 从 null → 有值 或从一个值切到另一个值时触发弹跳
+    // mood 从 null → 有值 或从一个值切到另一个值时触发弹跳庆祝
+    // 幅度 1.3 + 回弹 + 二次微震，强化记录完成感
     Animated.sequence([
       Animated.timing(scaleAnim, {
-        toValue: 1.2,
-        duration: 150,
+        toValue: 1.3,
+        duration: 180,
         easing: Easing.out(Easing.ease),
         useNativeDriver: true,
       }),
       Animated.timing(scaleAnim, {
+        toValue: 0.95,
+        duration: 140,
+        easing: Easing.inOut(Easing.ease),
+        useNativeDriver: true,
+      }),
+      Animated.timing(scaleAnim, {
         toValue: 1,
-        duration: 250,
-        easing: Easing.elastic(1.2),
+        duration: 260,
+        easing: Easing.elastic(1.4),
         useNativeDriver: true,
       }),
     ]).start();
@@ -134,9 +141,10 @@ const styles = StyleSheet.create({
   },
   shareBtn: {
     position: 'absolute',
-    top: SPACING.sm,
+    top: 0,
     right: 0,
-    padding: SPACING.xs,
+    // 触摸目标 ≥44dp（图标 20 + padding 12）
+    padding: SPACING.md,
     zIndex: 1,
   },
   greeting: {
@@ -168,7 +176,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: SPACING.md,
     paddingVertical: SPACING.xs,
     backgroundColor: COLORS.surfaceAlt,
-    borderRadius: 12,
+    borderRadius: RADIUS.sm,
   },
   streakText: {
     fontSize: FONT_SIZE.sm,

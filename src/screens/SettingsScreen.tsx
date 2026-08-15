@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, Switch, TouchableOpacity, Alert, Modal, Pressab
 import * as Notifications from 'expo-notifications';
 import Constants from 'expo-constants';
 import Svg, { Path, Circle, Polyline, Ellipse, Rect } from 'react-native-svg';
-import { COLORS, SPACING, MOOD_EVENTS } from '../constants';
+import { COLORS, SPACING, MOOD_EVENTS, FONT_SIZE, RADIUS } from '../constants';
 import type { NotificationSettings } from '../types';
 import { getNotificationSettings, saveNotificationSettings, getTotalRecordCount, getDatabaseSize } from '../database/moodDB';
 import { exportMoodData } from '../utils/exportData';
@@ -550,7 +550,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.surface,
     marginHorizontal: 16,
     marginTop: 12,
-    borderRadius: 16,
+    borderRadius: RADIUS.md,
     padding: 20,
     // shadow-card 替代
     elevation: 1,
@@ -560,7 +560,7 @@ const styles = StyleSheet.create({
     shadowRadius: 3,
   },
   sectionTitle: {
-    fontSize: 18,
+    fontSize: FONT_SIZE.lg,
     fontWeight: '600',
     color: COLORS.text,
     letterSpacing: -0.3,
@@ -581,7 +581,7 @@ const styles = StyleSheet.create({
   rowIcon: {
     width: 36,
     height: 36,
-    borderRadius: 8,
+    borderRadius: RADIUS.xs,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -589,12 +589,12 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   rowLabel: {
-    fontSize: 15,
+    fontSize: FONT_SIZE.md,
     fontWeight: '500',
     color: COLORS.text,
   },
   rowDesc: {
-    fontSize: 13,
+    fontSize: FONT_SIZE.sm,
     color: COLORS.textSecondary,
     marginTop: 2,
   },
@@ -605,12 +605,12 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   timeValue: {
-    fontSize: 17,
+    fontSize: FONT_SIZE.lg,
     fontWeight: '600',
     color: COLORS.text,
   },
   chevron: {
-    fontSize: 22,
+    fontSize: FONT_SIZE.xl,
     color: COLORS.textTertiary,
     marginTop: -4,
   },
@@ -632,7 +632,7 @@ const styles = StyleSheet.create({
   btnOutlined: {
     flex: 1,
     height: 44,
-    borderRadius: 12,
+    borderRadius: RADIUS.sm,
     borderWidth: 1.5,
     borderColor: COLORS.accent,
     backgroundColor: COLORS.surface, // 必须实色，否则 RN Android 圆角失效
@@ -640,14 +640,14 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   btnOutlinedText: {
-    fontSize: 15,
+    fontSize: FONT_SIZE.md,
     fontWeight: '500',
     color: COLORS.accent,
   },
   btnFilled: {
     flex: 1,
     height: 44,
-    borderRadius: 12,
+    borderRadius: RADIUS.sm,
     backgroundColor: COLORS.accent,
     alignItems: 'center',
     justifyContent: 'center',
@@ -658,12 +658,12 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
   },
   btnFilledText: {
-    fontSize: 15,
+    fontSize: FONT_SIZE.md,
     fontWeight: '500',
     color: COLORS.surface,
   },
   exportHint: {
-    fontSize: 11,
+    fontSize: FONT_SIZE.xs,
     color: COLORS.textTertiary,
     textAlign: 'center',
     marginTop: 12,
@@ -671,7 +671,7 @@ const styles = StyleSheet.create({
   },
   // 关于卡片
   appName: {
-    fontSize: 15,
+    fontSize: FONT_SIZE.md,
     fontWeight: '600',
     color: COLORS.text,
   },
@@ -679,10 +679,10 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.bgAlt,
     paddingHorizontal: 10,
     paddingVertical: 4,
-    borderRadius: 999,
+    borderRadius: RADIUS.pill,
   },
   versionPillText: {
-    fontSize: 13,
+    fontSize: FONT_SIZE.sm,
     fontWeight: '500',
     color: COLORS.textSecondary,
   },
@@ -696,12 +696,12 @@ const styles = StyleSheet.create({
   },
   privacyText: {
     flex: 1,
-    fontSize: 13,
+    fontSize: FONT_SIZE.sm,
     color: COLORS.textSecondary,
     lineHeight: 21,
   },
   footer: {
-    fontSize: 13,
+    fontSize: FONT_SIZE.sm,
     color: COLORS.textTertiary,
     textAlign: 'center',
     paddingTop: 8,
@@ -714,8 +714,8 @@ const styles = StyleSheet.create({
   },
   timePickerModal: {
     backgroundColor: COLORS.surface,
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
+    borderTopLeftRadius: RADIUS.xl,
+    borderTopRightRadius: RADIUS.xl,
     padding: 24,
     maxHeight: '80%',
   },
@@ -726,12 +726,12 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   pickerTitle: {
-    fontSize: 18,
+    fontSize: FONT_SIZE.lg,
     fontWeight: '600',
     color: COLORS.text,
   },
   pickerClose: {
-    fontSize: 15,
+    fontSize: FONT_SIZE.md,
     color: COLORS.accent,
     fontWeight: '600',
   },
@@ -742,27 +742,27 @@ const styles = StyleSheet.create({
   confirmModal: {
     backgroundColor: COLORS.surface,
     marginHorizontal: 32,
-    borderRadius: 16,
+    borderRadius: RADIUS.md,
     padding: 24,
   },
   confirmTitle: {
-    fontSize: 18,
+    fontSize: FONT_SIZE.lg,
     fontWeight: '600',
     color: COLORS.text,
     marginBottom: 8,
   },
   confirmDesc: {
-    fontSize: 13,
+    fontSize: FONT_SIZE.sm,
     color: COLORS.textSecondary,
     lineHeight: 20,
     marginBottom: 16,
   },
   confirmInput: {
     backgroundColor: COLORS.background,
-    borderRadius: 10,
+    borderRadius: RADIUS.xs,
     paddingHorizontal: 16,
     paddingVertical: 8,
-    fontSize: 15,
+    fontSize: FONT_SIZE.md,
     color: COLORS.text,
     marginBottom: 24,
   },
@@ -773,14 +773,14 @@ const styles = StyleSheet.create({
   confirmBtn: {
     flex: 1,
     paddingVertical: 16,
-    borderRadius: 10,
+    borderRadius: RADIUS.xs,
     alignItems: 'center',
   },
   confirmBtnCancel: {
     backgroundColor: COLORS.background,
   },
   confirmBtnCancelText: {
-    fontSize: 15,
+    fontSize: FONT_SIZE.md,
     color: COLORS.textSecondary,
     fontWeight: '600',
   },
@@ -788,7 +788,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#E57373',
   },
   confirmBtnDangerText: {
-    fontSize: 15,
+    fontSize: FONT_SIZE.md,
     color: COLORS.surface,
     fontWeight: '600',
   },

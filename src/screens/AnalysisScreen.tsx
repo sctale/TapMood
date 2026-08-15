@@ -1,7 +1,7 @@
 import React, { useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, DeviceEventEmitter } from 'react-native';
 import type { AnalysisPeriod } from '../types';
-import { COLORS, SPACING, FONT_SIZE, MOOD_EVENTS } from '../constants';
+import { COLORS, SPACING, FONT_SIZE, MOOD_EVENTS, RADIUS } from '../constants';
 import { getWeekRange, getMonthRange, getYearRange } from '../utils/dateUtils';
 import { getStreak, getLongestStreak, getTotalRecordCount } from '../database/moodDB';
 import { getMoodTip } from '../utils/moodTips';
@@ -203,7 +203,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.surface,
     marginHorizontal: SPACING.md,
     marginTop: SPACING.md,
-    borderRadius: 16,
+    borderRadius: RADIUS.md,
     padding: SPACING.lg,
   },
   statsCardRow: {
@@ -215,7 +215,7 @@ const styles = StyleSheet.create({
   statsCard: {
     flex: 1,
     backgroundColor: COLORS.surface,
-    borderRadius: 16,
+    borderRadius: RADIUS.md,
     paddingVertical: SPACING.md,
     alignItems: 'center',
   },
@@ -232,14 +232,14 @@ const styles = StyleSheet.create({
   periodTabs: {
     flexDirection: 'row',
     backgroundColor: COLORS.background,
-    borderRadius: 999,
+    borderRadius: RADIUS.pill,
     padding: 3,
   },
   periodTab: {
     flex: 1,
     paddingVertical: SPACING.sm,
     alignItems: 'center',
-    borderRadius: 8,
+    borderRadius: RADIUS.xs,
   },
   periodTabActive: {
     backgroundColor: COLORS.surface,
@@ -271,7 +271,7 @@ const styles = StyleSheet.create({
   chartToggle: {
     flexDirection: 'row',
     backgroundColor: COLORS.background,
-    borderRadius: 999,
+    borderRadius: RADIUS.pill,
     padding: 2,
   },
   toggleBtn: {
@@ -315,7 +315,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.surfaceAlt,
     marginHorizontal: SPACING.md,
     marginTop: SPACING.md,
-    borderRadius: 12,
+    borderRadius: RADIUS.sm,
     padding: SPACING.lg,
   },
   tipEmoji: {

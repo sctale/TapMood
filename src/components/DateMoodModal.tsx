@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, Modal, TouchableOpacity, Pressable } from 'react-native';
+import { View, Text, StyleSheet, Modal, TouchableOpacity, Pressable, Animated } from 'react-native';
 import type { MoodLevel } from '../types';
-import { MOOD_CONFIG, MOOD_LEVELS, COLORS, SPACING, FONT_SIZE } from '../constants';
+import { MOOD_CONFIG, MOOD_LEVELS, COLORS, SPACING, FONT_SIZE, RADIUS } from '../constants';
 import { getMoodByDate, recordMoodForDate, deleteMoodByDate } from '../database/moodDB';
 import { updateMoodWidget } from '../widgets/MoodWidget';
 import { parseDate, formatDate } from '../utils/dateUtils';
+import { hapticSuccess, hapticError } from '../utils/haptics';
 import MoodIcon from './MoodIcon';
 
 interface DateMoodModalProps {
@@ -12,6 +13,53 @@ interface DateMoodModalProps {
   date: string | null; // YYYY-MM-DD
   onClose: () => void;
   onRecorded: () => void;
+}
+
+// 心情选择按钮：选中时 0.92→1 弹性缩放，给出即时视觉反馈
+function MoodBtn({ level, isSelected, loading, onPress }: {
+  level: MoodLevel;
+  isSelected: boolean;
+  loading: boolean;
+  onPress: (level: MoodLevel) => void;
+}) {
+  const scaleAnim = useRef(new Animated.Value(1)).current;
+  const prevSelected = useRef(false);
+
+  useEffect(() => {
+    if (isSelected && !prevSelected.current) {
+      Animated.sequence([
+        Animated.timing(scaleAnim, { toValue: 0.92, duration: 90, useNativeDriver: true }),
+        Animated.spring(scaleAnim, { toValue: 1, friction: 4, useNativeDriver: true }),
+      ]).start();
+    }
+    prevSelected.current = isSelected;
+  }, [isSelected, scaleAnim]);
+
+  const config = MOOD_CONFIG[level];
+
+  return (
+    <Animated.View style={{ transform: [{ scale: scaleAnim }] }}>
+      <TouchableOpacity
+        style={[
+          styles.moodBtn,
+          isSelected && { backgroundColor: config.color, borderColor: 'transparent' },
+        ]}
+        onPress={() => onPress(level)}
+        disabled={loading}
+        activeOpacity={0.7}
+      >
+        <MoodIcon
+          mood={level}
+          size={32}
+          isSelected={isSelected}
+          bgOverride={isSelected ? 'rgba(255,255,255,0.3)' : undefined}
+        />
+        <Text style={[styles.moodText, { color: isSelected ? (level === 'okay' ? '#5D4037' : COLORS.surface) : config.color }]}>
+          {config.label}
+        </Text>
+      </TouchableOpacity>
+    </Animated.View>
+  );
 }
 
 export default function DateMoodModal({ visible, date, onClose, onRecorded }: DateMoodModalProps) {
@@ -51,7 +99,9 @@ export default function DateMoodModal({ visible, date, onClose, onRecorded }: Da
       // 同步更新小组件状态
       await updateMoodWidget();
       onRecorded();
+      hapticSuccess();
     } catch {
+      hapticError();
       // 失败静默，用户可重试
     } finally {
       clearTimeout(safetyTimeout);
@@ -69,7 +119,9 @@ export default function DateMoodModal({ visible, date, onClose, onRecorded }: Da
       // 同步更新小组件状态（与 handleSelect 保持一致）
       await updateMoodWidget();
       onRecorded();
+      hapticSuccess();
     } catch {
+      hapticError();
       // 失败静默
     } finally {
       setLoading(false);
@@ -116,32 +168,24 @@ export default function DateMoodModal({ visible, date, onClose, onRecorded }: Da
           {/* 心情选择按钮 */}
           {!isFuture && (
             <View style={styles.moodRow}>
-              {MOOD_LEVELS.map((level) => {
-                const config = MOOD_CONFIG[level];
-                const isSelected = currentMood === level;
-                return (
-                  <TouchableOpacity
-                    key={level}
-                    style={[
-                      styles.moodBtn,
-                      isSelected && { backgroundColor: config.color, borderColor: 'transparent' },
-                    ]}
-                    onPress={() => handleSelect(level)}
-                    disabled={loading}
-                    activeOpacity={0.7}
-                  >
-                    <MoodIcon
-                      mood={level}
-                      size={32}
-                      isSelected={isSelected}
-                      bgOverride={isSelected ? 'rgba(255,255,255,0.3)' : undefined}
-                    />
-                    <Text style={[styles.moodText, { color: isSelected ? (level === 'okay' ? '#5D4037' : COLORS.surface) : config.color }]}>
-                      {config.label}
-                    </Text>
-                  </TouchableOpacity>
-                );
-              })}
+              {MOOD_LEVELS.map((level) => (
+                <MoodBtn
+                  key={level}
+                  level={level}
+                  isSelected={currentMood === level}
+                  loading={loading}
+                  onPress={handleSelect}
+                />
+              ))}
+            </View>
+          )}
+
+          {/* 未来日期占位（避免内容突然变空） */}
+          {isFuture && (
+            <View style={styles.futurePlaceholder}>
+              <Text style={styles.futureEmoji}>🗓️</Text>
+              <Text style={styles.futureText}>还没到这一天哦</Text>
+              <Text style={styles.futureSub}>到时候再来记录心情吧</Text>
             </View>
           )}
 
@@ -171,7 +215,7 @@ const styles = StyleSheet.create({
   },
   modal: {
     backgroundColor: COLORS.surface,
-    borderRadius: 24,
+    borderRadius: RADIUS.xl,
     padding: SPACING.xl,
     width: '85%',
     maxWidth: 360,
@@ -196,7 +240,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: SPACING.sm,
-    borderRadius: 12,
+    borderRadius: RADIUS.sm,
     marginBottom: SPACING.md,
     gap: SPACING.sm,
   },
@@ -214,10 +258,29 @@ const styles = StyleSheet.create({
     gap: SPACING.md,
     marginBottom: SPACING.lg,
   },
+  futurePlaceholder: {
+    alignItems: 'center',
+    paddingVertical: SPACING.xl,
+    marginBottom: SPACING.sm,
+  },
+  futureEmoji: {
+    fontSize: 44,
+    marginBottom: SPACING.sm,
+  },
+  futureText: {
+    fontSize: FONT_SIZE.md,
+    fontWeight: '600',
+    color: COLORS.text,
+  },
+  futureSub: {
+    fontSize: FONT_SIZE.sm,
+    color: COLORS.textSecondary,
+    marginTop: SPACING.xs,
+  },
   moodBtn: {
     width: 80,
     height: 96,
-    borderRadius: 20,
+    borderRadius: RADIUS.lg,
     borderWidth: 1.5,
     borderColor: COLORS.border,
     backgroundColor: COLORS.surface,
@@ -235,7 +298,7 @@ const styles = StyleSheet.create({
     gap: SPACING.md,
   },
   deleteBtn: {
-    paddingVertical: SPACING.sm,
+    paddingVertical: 14, // 触摸目标 ≥44dp
     paddingHorizontal: SPACING.md,
   },
   deleteText: {
@@ -243,10 +306,10 @@ const styles = StyleSheet.create({
     color: '#C62828', // 白底对比度 5.9:1（原 #E57373 仅 3.8:1）
   },
   closeBtn: {
-    paddingVertical: SPACING.sm,
+    paddingVertical: 14, // 触摸目标 ≥44dp
     paddingHorizontal: SPACING.lg,
     backgroundColor: COLORS.background,
-    borderRadius: 12,
+    borderRadius: RADIUS.sm,
   },
   closeText: {
     fontSize: FONT_SIZE.sm,

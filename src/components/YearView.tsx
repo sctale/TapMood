@@ -49,6 +49,7 @@ export default React.memo(function YearView({ year, records, onDatePress }: Year
             style={[styles.miniDayCell, { backgroundColor: moodColor }]}
             onPress={() => onDatePress(dateStr)}
             activeOpacity={0.6}
+            hitSlop={{ top: 2, bottom: 2, left: 2, right: 2 }}
           />
         ) : (
           <View

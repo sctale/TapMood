@@ -1,8 +1,9 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import type { MoodRecord } from '../types';
-import { MOOD_CONFIG, COLORS, SPACING, FONT_SIZE } from '../constants';
+import { MOOD_CONFIG, COLORS, SPACING, FONT_SIZE, RADIUS } from '../constants';
 import { getWeekdayName, addDays, formatDate } from '../utils/dateUtils';
+import MoodIcon from './MoodIcon';
 
 interface WeekViewProps {
   currentDate: Date;
@@ -62,6 +63,7 @@ export default React.memo(function WeekView({ currentDate, records, onDatePress 
               onPress={() => onDatePress?.(dateStr)}
               activeOpacity={0.6}
               disabled={!onDatePress || isFuture}
+              hitSlop={{ top: 2, bottom: 2, left: 2, right: 2 }}
             >
               <View style={[
                 styles.moodBlock,
@@ -77,6 +79,12 @@ export default React.memo(function WeekView({ currentDate, records, onDatePress 
                 ]}>
                   {d.getDate()}
                 </Text>
+                {/* 色盲辅助：右上角微缩心情脸，颜色+形状双通道区分 */}
+                {record && (
+                  <View style={styles.moodBadge}>
+                    <MoodIcon mood={record.mood} size={12} bgOverride={COLORS.surface} />
+                  </View>
+                )}
               </View>
             </TouchableOpacity>
           );
@@ -111,17 +119,18 @@ const styles = StyleSheet.create({
   moodBlock: {
     width: 40,
     height: 40,
-    borderRadius: 12,
+    borderRadius: RADIUS.sm,
     alignItems: 'center',
     justifyContent: 'center',
   },
   todayBlockRecorded: {
-    borderWidth: 2,
-    borderColor: COLORS.text,
+    borderWidth: 2.5,
+    borderColor: COLORS.accent, // accent 描边环（原黑边生硬）
   },
   todayBlockEmpty: {
-    borderWidth: 2,
-    borderColor: COLORS.textTertiary,
+    borderWidth: 2.5,
+    borderColor: COLORS.accent, // 原 textTertiary 灰边对比 1.9:1 几乎不可见
+    backgroundColor: COLORS.badBg, // accent 同色系浅底，强化"今日"感知
   },
   moodBlockFuture: {
     opacity: 0.4,
@@ -137,5 +146,12 @@ const styles = StyleSheet.create({
   todayText: {
     fontWeight: 'bold',
     fontSize: FONT_SIZE.md,
+  },
+  moodBadge: {
+    position: 'absolute',
+    top: -3,
+    right: -3,
+    borderRadius: 6,
+    backgroundColor: COLORS.surface,
   },
 });

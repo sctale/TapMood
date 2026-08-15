@@ -132,7 +132,7 @@ const styles = StyleSheet.create({
   ctaBtn: {
     // 圆角元素强制实色背景（项目硬约束）
     backgroundColor: COLORS.good,
-    borderRadius: RADIUS.lg,
+    borderRadius: RADIUS.md, // 保持原 16 视觉不变（RADIUS.lg 已语义化为 20）
     paddingVertical: SPACING.md,
     paddingHorizontal: SPACING.xxl,
     marginTop: SPACING.xxl,

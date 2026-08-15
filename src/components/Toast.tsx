@@ -1,6 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, Animated, Easing } from 'react-native';
-import { COLORS, SPACING, FONT_SIZE } from '../constants';
+import { COLORS, SPACING, FONT_SIZE, RADIUS } from '../constants';
 
 export type ToastType = 'success' | 'error' | 'info';
 
@@ -89,7 +89,7 @@ const styles = StyleSheet.create({
   toast: {
     paddingHorizontal: SPACING.lg,
     paddingVertical: SPACING.sm + 2,
-    borderRadius: 20,
+    borderRadius: RADIUS.lg,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.15,

@@ -17,16 +17,16 @@ function enqueueWrite(task: () => Promise<void>): Promise<void> {
   return writeQueue;
 }
 
-// 更新小组件状态文件（今天的心情记录）
+// 更新小组件状态文件（今天的心情记录 + 连续打卡天数，供原生渲染状态区）
 export async function updateMoodWidget() {
   await enqueueWrite(async () => {
     try {
-      const record = await moodDB.getTodayMood();
+      const [record, streak] = await Promise.all([moodDB.getTodayMood(), moodDB.getStreak()]);
       const today = new Date();
       const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
 
       stateFile.create({ intermediates: true, overwrite: true });
-      stateFile.write(JSON.stringify({ date: todayStr, mood: record?.mood ?? '' }));
+      stateFile.write(JSON.stringify({ date: todayStr, mood: record?.mood ?? '', streak }));
     } catch {
       // 数据库未初始化时忽略
     }

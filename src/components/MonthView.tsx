@@ -1,8 +1,9 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import type { MoodRecord } from '../types';
-import { MOOD_CONFIG, COLORS, SPACING, FONT_SIZE } from '../constants';
+import { MOOD_CONFIG, COLORS, SPACING, FONT_SIZE, RADIUS } from '../constants';
 import { getDaysInMonth, getFirstDayOfMonth, formatDate } from '../utils/dateUtils';
+import MoodIcon from './MoodIcon';
 
 interface MonthViewProps {
   year: number;
@@ -66,6 +67,7 @@ export default React.memo(function MonthView({ year, month, records, onDatePress
                 onPress={() => onDatePress?.(dateStr)}
                 activeOpacity={0.6}
                 disabled={!onDatePress}
+                hitSlop={{ top: 3, bottom: 3, left: 3, right: 3 }}
               >
                 <View style={[
                   styles.moodCircle,
@@ -81,6 +83,12 @@ export default React.memo(function MonthView({ year, month, records, onDatePress
                   ]}>
                     {day}
                   </Text>
+                  {/* 色盲辅助：右上角微缩心情脸，颜色+形状双通道区分 */}
+                  {record && (
+                    <View style={styles.moodBadge}>
+                      <MoodIcon mood={record.mood} size={12} bgOverride={COLORS.surface} />
+                    </View>
+                  )}
                 </View>
               </TouchableOpacity>
             );
@@ -125,18 +133,19 @@ const styles = StyleSheet.create({
   moodCircle: {
     width: 34,
     height: 34,
-    borderRadius: 12,
+    borderRadius: RADIUS.sm,
     backgroundColor: COLORS.bgAlt, // 未记录占位背景（原 border 色在白卡上几乎不可见）
     alignItems: 'center',
     justifyContent: 'center',
   },
   todayCircleRecorded: {
-    borderWidth: 2,
-    borderColor: COLORS.text,
+    borderWidth: 2.5,
+    borderColor: COLORS.accent, // accent 描边环（原黑边生硬）
   },
   todayCircleEmpty: {
-    borderWidth: 2,
-    borderColor: COLORS.textTertiary,
+    borderWidth: 2.5,
+    borderColor: COLORS.accent, // 原 textTertiary 灰边对比 1.9:1 几乎不可见
+    backgroundColor: COLORS.badBg, // accent 同色系浅底，强化"今日"感知
   },
   dayText: {
     fontSize: FONT_SIZE.xs,
@@ -150,5 +159,12 @@ const styles = StyleSheet.create({
   },
   dayTextFuture: {
     color: COLORS.textTertiary,
+  },
+  moodBadge: {
+    position: 'absolute',
+    top: -3,
+    right: -3,
+    borderRadius: 6,
+    backgroundColor: COLORS.surface,
   },
 });
