@@ -2,7 +2,6 @@ import React, { useState, useRef } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, useWindowDimensions, type NativeSyntheticEvent, type NativeScrollEvent } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import * as Notifications from 'expo-notifications';
 import { COLORS, SPACING, FONT_SIZE, RADIUS } from '../constants';
 
 interface OnboardingScreenProps {
@@ -36,13 +35,9 @@ export default function OnboardingScreen({ onDone }: OnboardingScreenProps) {
     setPageIndex(index);
   };
 
-  // 第 3 屏 CTA：触发通知权限请求（可跳过，失败也能进主页）
+  // 第 3 屏 CTA：直接进入主页
+  // 注：通知权限不再在此提前请求——改为用户主动开启"每日提醒"开关时才请求（SettingsScreen.toggleNotification）
   const handleStart = async () => {
-    try {
-      await Notifications.requestPermissionsAsync();
-    } catch {
-      // 权限请求失败静默处理，不阻塞进入主页
-    }
     onDone();
   };
 
