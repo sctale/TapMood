@@ -3,7 +3,7 @@
  *
  * 设计目标：
  * - 小组件高度严格为 1 行，与桌面图标高度一致
- * - 小组件内仅显示 3 个可点击心情图标
+ * - 小组件内仅显示 3 个可点击心情图标，顺序与 App 内 MoodSelector 一致（好→中→差）
  * - 应用名称“一点心情”由桌面启动器通过 android:label 显示在小组件下方
  * - 支持水平调整宽度，垂直高度保持 1 行不变
  *
@@ -52,9 +52,9 @@ const JAVA_UTILS = `
     private void applyRecordedState(Context context, RemoteViews views) {
         String mood = getTodayRecordedMood(context);
         int dimAlpha = 100; // 未记录到的心情按钮透明度（约 40%）
-        views.setInt(R.id.btn_bad, "setImageAlpha", "bad".equals(mood) ? 255 : dimAlpha);
-        views.setInt(R.id.btn_okay, "setImageAlpha", "okay".equals(mood) ? 255 : dimAlpha);
         views.setInt(R.id.btn_good, "setImageAlpha", "good".equals(mood) ? 255 : dimAlpha);
+        views.setInt(R.id.btn_okay, "setImageAlpha", "okay".equals(mood) ? 255 : dimAlpha);
+        views.setInt(R.id.btn_bad, "setImageAlpha", "bad".equals(mood) ? 255 : dimAlpha);
     }
 
     private int getBgAlphaLevel(Context context) {
@@ -125,9 +125,9 @@ public class MoodWidget extends AppWidgetProvider {
     }
 
     private void setupClicks(Context context, RemoteViews views) {
-        views.setOnClickPendingIntent(R.id.btn_bad, getMoodPendingIntent(context, ACTION_MOOD_BAD, 1));
-        views.setOnClickPendingIntent(R.id.btn_okay, getMoodPendingIntent(context, ACTION_MOOD_OKAY, 2));
         views.setOnClickPendingIntent(R.id.btn_good, getMoodPendingIntent(context, ACTION_MOOD_GOOD, 3));
+        views.setOnClickPendingIntent(R.id.btn_okay, getMoodPendingIntent(context, ACTION_MOOD_OKAY, 2));
+        views.setOnClickPendingIntent(R.id.btn_bad, getMoodPendingIntent(context, ACTION_MOOD_BAD, 1));
     }
 
     @Override
@@ -312,11 +312,11 @@ const WIDGET_LAYOUT = `<?xml version="1.0" encoding="utf-8"?>
     android:paddingBottom="4dp"
     android:gravity="center_vertical">
 
-    <ImageView android:id="@+id/btn_bad" android:layout_width="0dp"
+    <ImageView android:id="@+id/btn_good" android:layout_width="0dp"
         android:layout_height="match_parent" android:layout_weight="1"
-        android:src="@drawable/ic_mood_bad" android:scaleType="centerInside"
+        android:src="@drawable/ic_mood_good" android:scaleType="centerInside"
         android:layout_margin="3dp"
-        android:contentDescription="差" />
+        android:contentDescription="好" />
 
     <ImageView android:id="@+id/btn_okay" android:layout_width="0dp"
         android:layout_height="match_parent" android:layout_weight="1"
@@ -324,11 +324,11 @@ const WIDGET_LAYOUT = `<?xml version="1.0" encoding="utf-8"?>
         android:layout_margin="3dp"
         android:contentDescription="中" />
 
-    <ImageView android:id="@+id/btn_good" android:layout_width="0dp"
+    <ImageView android:id="@+id/btn_bad" android:layout_width="0dp"
         android:layout_height="match_parent" android:layout_weight="1"
-        android:src="@drawable/ic_mood_good" android:scaleType="centerInside"
+        android:src="@drawable/ic_mood_bad" android:scaleType="centerInside"
         android:layout_margin="3dp"
-        android:contentDescription="好" />
+        android:contentDescription="差" />
 </LinearLayout>`;
 
 // ============================================================
@@ -355,9 +355,9 @@ const WIDGET_INFO = `<?xml version="1.0" encoding="utf-8"?>
 // 实心彩色圆图标 - 主色圆底 + 加粗表情
 // 设计理念：底色与 App 内 MOOD_CONFIG 主色一致（靛蓝/琥珀/薄荷绿），
 // 笔画色按底色亮度适配（白/深棕/深绿），小尺寸下清晰可辨
-// 差：靛蓝圆 + 白色圆点眼 + 下弯嘴
-// 中：琥珀圆 + 深棕圆点眼 + 直线嘴
 // 好：薄荷绿圆 + 深绿笑眼 + 上弯嘴
+// 中：琥珀圆 + 深棕圆点眼 + 直线嘴
+// 差：靛蓝圆 + 白色圆点眼 + 下弯嘴
 // ============================================================
 const IC_MOOD_BAD = `<?xml version="1.0" encoding="utf-8"?>
 <vector xmlns:android="http://schemas.android.com/apk/res/android"

@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity, RefreshControl, D
 import { StatusBar } from 'expo-status-bar';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { MoodLevel, CalendarView } from '../types';
-import { COLORS, SPACING, FONT_SIZE, MOOD_EVENTS, RADIUS } from '../constants';
+import { COLORS, SPACING, FONT_SIZE, MOOD_EVENTS, MOOD_LEVELS, RADIUS } from '../constants';
 import { useTodayMood, useMoodRange } from '../hooks/useMood';
 import { getStreak, getTotalRecordCount } from '../database/moodDB';
 import { getWeekRange, getMonthRange, getYearRange, getMonthName, formatDate, getDaysInMonth, isLeapYear, dayOfYear, isSameISOWeek, getMondayOfWeek } from '../utils/dateUtils';
@@ -131,7 +131,7 @@ export default function HomeScreen() {
       try {
         const pending = await AsyncStorage.getItem('pendingWidgetMood');
         if (cancelled || !pending) return;
-        if (pending === 'bad' || pending === 'okay' || pending === 'good') {
+        if (MOOD_LEVELS.includes(pending as MoodLevel)) {
           await AsyncStorage.removeItem('pendingWidgetMood');
           await handleMoodSelect(pending as MoodLevel);
         }

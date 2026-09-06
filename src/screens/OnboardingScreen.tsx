@@ -11,7 +11,7 @@ interface OnboardingScreenProps {
 // 3 屏内容（极简风格：emoji + 标题 + 副文案）
 const PAGES = [
   { emoji: '🌿', title: '一点心情', subtitle: '每天 3 秒，记录你的情绪' },
-  { emoji: '👆', title: '点一下就好', subtitle: '差 / 中 / 好，三档心情一键记录' },
+  { emoji: '👆', title: '点一下就好', subtitle: '好 / 中 / 差，三档心情一键记录' },
   { emoji: '🔔', title: '每日提醒', subtitle: '设置一个时间，我会在对的时候提醒你' },
 ] as const;
 

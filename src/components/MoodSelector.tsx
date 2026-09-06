@@ -6,9 +6,9 @@ import MoodIcon from './MoodIcon';
 
 // okay 琥珀底(#FFB74D)与白字对比度仅 1.9:1，改用深棕（对比度 6.8:1）
 const SELECTED_TEXT_COLOR: Record<MoodLevel, string> = {
-  bad: COLORS.surface,
-  okay: '#5D4037',
   good: COLORS.surface,
+  okay: '#5D4037',
+  bad: COLORS.surface,
 };
 
 interface MoodSelectorProps {

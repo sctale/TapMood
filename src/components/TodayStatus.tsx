@@ -12,9 +12,9 @@ interface TodayStatusProps {
 
 // 心情 emoji（用于分享文案）
 const MOOD_EMOJI: Record<MoodLevel, string> = {
-  bad: '😔',
-  okay: '😐',
   good: '😊',
+  okay: '😐',
+  bad: '😔',
 };
 
 // 分享图标 20×20

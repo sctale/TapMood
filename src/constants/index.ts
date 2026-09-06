@@ -4,22 +4,22 @@ import type { MoodLevel } from '../types';
 export const MOOD_CONFIG: Record<MoodLevel, {
   label: string; color: string;
 }> = {
-  bad: {
-    label: '差',
-    color: '#7986CB',         // 柔和靛蓝
+  good: {
+    label: '好',
+    color: '#81C784',         // 柔和薄荷绿
   },
   okay: {
     label: '中',
     color: '#FFB74D',         // 温暖琥珀
   },
-  good: {
-    label: '好',
-    color: '#81C784',         // 柔和薄荷绿
+  bad: {
+    label: '差',
+    color: '#7986CB',         // 柔和靛蓝
   },
 };
 
-// 心情等级列表（顺序：差、中、好）
-export const MOOD_LEVELS: MoodLevel[] = ['bad', 'okay', 'good'];
+// 心情等级列表（顺序：好、中、差——正向优先，与 App 按钮/小组件/图表统一）
+export const MOOD_LEVELS: MoodLevel[] = ['good', 'okay', 'bad'];
 
 // 主题色（参考 Headspace/Finch 治愈风格）
 // 注：心情色（bad/okay/good）以 MOOD_CONFIG 为单一数据源

@@ -1,7 +1,7 @@
 import { createWidget, addUserInteractionListener } from 'expo-widgets';
 import { View, Text, DeviceEventEmitter } from 'react-native';
 import * as moodDB from '../database/moodDB';
-import { MOOD_CONFIG, RADIUS } from '../constants';
+import { MOOD_CONFIG, MOOD_LEVELS, RADIUS } from '../constants';
 import type { MoodLevel } from '../types';
 
 // 小组件 Props 类型
@@ -14,9 +14,9 @@ interface MoodWidgetProps {
 
 // iOS 小组件专用 emoji（SVG 图标无法在 WidgetKit 中使用）
 const MOOD_EMOJIS: Record<string, string> = {
-  bad: '😔',
-  okay: '😐',
   good: '😊',
+  okay: '😐',
+  bad: '😔',
 };
 
 // 档位 → 背景不透明度
@@ -102,7 +102,7 @@ const moodWidget = createWidget<MoodWidgetProps>('MoodWidget', (props, environme
 
       {/* 三个快捷按钮 */}
       <View style={{ flexDirection: 'row', gap: 8 }}>
-        {(['bad', 'okay', 'good'] as MoodLevel[]).map((level) => (
+        {MOOD_LEVELS.map((level) => (
           <View
             key={level}
             {...{ widgetTarget: level } as any}
@@ -144,7 +144,7 @@ let isProcessingWidgetInteraction = false;
 export function setupWidgetInteractionListener() {
   return addUserInteractionListener(async (event) => {
     const mood = event.target as MoodLevel;
-    if (!['bad', 'okay', 'good'].includes(mood)) return;
+    if (!MOOD_LEVELS.includes(mood)) return;
     // systemSmall 点击整体打开 APP（target 为 'small'），不记录
     if (mood === ('small' as unknown as MoodLevel)) return;
 

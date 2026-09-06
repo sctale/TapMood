@@ -6,7 +6,7 @@ import {
   replaceAllRecords,
   saveNotificationSettings,
 } from '../database/moodDB';
-import { MOOD_EVENTS } from '../constants';
+import { MOOD_EVENTS, MOOD_LEVELS } from '../constants';
 import type { MoodLevel, MoodRecord, NotificationSettings } from '../types';
 import type { MoodBackup } from './exportData';
 import { applyNotificationSettings } from './notification';
@@ -22,7 +22,6 @@ export interface ImportResult {
   cancelled?: boolean;
 }
 
-const MOOD_VALUES: MoodLevel[] = ['bad', 'okay', 'good'];
 const DATE_REGEX = /^\d{4}-\d{2}-\d{2}$/;
 const SUPPORTED_JSON_VERSION = '1';
 
@@ -34,7 +33,7 @@ function isValidRecord(input: unknown): input is MoodRecord {
     typeof r.date === 'string' &&
     DATE_REGEX.test(r.date) &&
     typeof r.mood === 'string' &&
-    MOOD_VALUES.includes(r.mood as MoodLevel)
+    MOOD_LEVELS.includes(r.mood as MoodLevel)
   );
 }
 

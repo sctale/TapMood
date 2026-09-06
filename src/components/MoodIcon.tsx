@@ -4,7 +4,7 @@ import type { MoodLevel } from '../types';
 import { MOOD_CONFIG, COLORS } from '../constants';
 
 interface MoodIconProps {
-  /** 心情等级：差 / 中 / 好 */
+  /** 心情等级：好 / 中 / 差 */
   mood: MoodLevel;
   /** 图标尺寸，默认 40（与小组件原始尺寸一致） */
   size?: number;
@@ -14,18 +14,18 @@ interface MoodIconProps {
   bgOverride?: string;
 }
 
-// 弱化描边色：与小组件原生矢量图标的描边一致（bad=#C5CAE9 / okay=#FFE0B2 / good=#C8E6C9）
+// 弱化描边色：与小组件原生矢量图标的描边一致（good=#C8E6C9 / okay=#FFE0B2 / bad=#C5CAE9）
 const MOOD_ICON_STROKE: Record<MoodLevel, string> = {
-  bad: '#C5CAE9',
-  okay: '#FFE0B2',
   good: '#C8E6C9',
+  okay: '#FFE0B2',
+  bad: '#C5CAE9',
 };
 
-// 圆形背景色：与小组件原生一致（badBg/okayBg/goodBg）
+// 圆形背景色：与小组件原生一致（goodBg/okayBg/badBg）
 const MOOD_ICON_BG: Record<MoodLevel, string> = {
-  bad: COLORS.badBg,
-  okay: COLORS.okayBg,
   good: COLORS.goodBg,
+  okay: COLORS.okayBg,
+  bad: COLORS.badBg,
 };
 
 /**
