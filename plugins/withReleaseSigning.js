@@ -40,6 +40,15 @@ module.exports = function withReleaseSigning(config) {
     const keystoreUnix = keystorePath.replace(/\\/g, '/');
     let contents = cfg.modResults.contents;
 
+    // 0) 幂等保护：增量 prebuild 读到的可能已是注入后的 build.gradle
+    //    （release 签名行 + tapmood keyAlias 均在），跳过重复注入
+    if (
+      contents.includes('signingConfig signingConfigs.release') &&
+      contents.includes("keyAlias 'tapmood'")
+    ) {
+      return cfg;
+    }
+
     // 1) 先把 release buildType 的签名从 debug 改为 release
     //    此时 signingConfigs 块内尚无 release 配置，第一个 `release {` 即 buildTypes.release
     const buildTypeRegex = /(release\s*\{[\s\S]*?)signingConfig signingConfigs\.debug/;
