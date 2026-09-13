@@ -115,8 +115,10 @@ export async function exportMoodDataToDownloads(): Promise<{
   }
 }
 
-// 获取日期字符串用于文件名
+// 生成文件名时间戳：YYYYMMDD_HHmmss（同日多次导出文件名不重复）
 function getDateStr(): string {
   const now = new Date();
-  return `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}`;
+  const d = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}`;
+  const t = `${String(now.getHours()).padStart(2, '0')}${String(now.getMinutes()).padStart(2, '0')}${String(now.getSeconds()).padStart(2, '0')}`;
+  return `${d}_${t}`;
 }
