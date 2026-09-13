@@ -78,14 +78,13 @@ src/
     └── moodTips.ts         # 心情建议文案
 
 plugins/
-├── withAndroidWidget.js      # Expo Config Plugin：自动生成 Android 原生桌面小组件
-├── withExportToDownloads.js  # Expo Config Plugin：注入"保存到下载目录"原生入口（ExportToDownloadsActivity）
-├── withVersionSync.js        # Expo Config Plugin：自动从 app.json.expo.version 派生 Android versionCode
-└── withReleaseSigning.js     # Expo Config Plugin：为 release 构建注入私有 keystore 签名
+├── withAndroidWidget.js    # Expo Config Plugin：自动生成 Android 原生桌面小组件
+├── withVersionSync.js      # Expo Config Plugin：自动从 app.json.expo.version 派生 Android versionCode
+└── withReleaseSigning.js   # Expo Config Plugin：为 release 构建注入私有 keystore 签名
 ```
 
 ## 版本
 
-当前版本：0.4.3
+当前版本：0.4.4
 
 > ⚠️ v0.3.49 起改用私有 release keystore 签名（此前为 debug 签名）。老用户**需先卸载旧版本再安装**，否则提示"安装包冲突"。升级前请在设置页导出备份。

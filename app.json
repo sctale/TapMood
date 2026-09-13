@@ -2,7 +2,7 @@
   "expo": {
     "name": "一点心情",
     "slug": "TapMood",
-    "version": "0.4.3",
+    "version": "0.4.4",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
@@ -37,8 +37,7 @@
         }
       ],
       "expo-widgets",
-      "./plugins/withAndroidWidget",
-      "./plugins/withExportToDownloads"
+      "./plugins/withAndroidWidget"
     ]
   }
 }

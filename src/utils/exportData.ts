@@ -1,6 +1,7 @@
 import { File, Paths } from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
-import { Linking, Platform } from 'react-native';
+import { Platform } from 'react-native';
+import ReactNativeBlobUtil from 'react-native-blob-util';
 import { getAllMoodRecords, getNotificationSettings } from '../database/moodDB';
 import type { MoodRecord, NotificationSettings } from '../types';
 
@@ -73,10 +74,11 @@ export async function exportMoodData(): Promise<{ success: boolean; count: numbe
   }
 }
 
-// 直接导出到手机存储（Android 公共「下载」目录）：
-// 写入应用内部 export_tmp/ 后通过 tapmoodexport:// 深链拉起原生
-// ExportToDownloadsActivity（config plugin 注入）完成 MediaStore 落盘，
-// 结果由原生 Toast 呈现；本函数只代表"任务已移交"，非"写入成功"
+// 直接导出到手机存储（系统「下载」目录）：
+// 用 react-native-blob-util 的 MediaCollection.copyToMediaStore('Download')——
+// 原生模块直接调用（非 Intent/深链拉起），API 29+ 走 MediaStore.Downloads 零权限，
+// ≤28 库内部落盘 Legacy 下载目录。One UI 实测：本应用自定义 scheme 的
+// Linking.openURL 隐式拉起不可靠（0.4.0~0.4.3 深链方案失败），故废弃该通道
 export async function exportMoodDataToDownloads(): Promise<{
   success: boolean;
   count: number;
@@ -93,33 +95,23 @@ export async function exportMoodDataToDownloads(): Promise<{
     }
 
     const fileName = backupFileName();
-    // 文档推荐多参拼接路径段（单参内含 '/' 非文档行为，曾致暂存路径解析失败）
-    const file = new File(Paths.document, 'export_tmp', fileName);
-    file.create({ intermediates: true, overwrite: true });
-    file.write(built.json);
+    const staged = new File(Paths.cache, fileName);
+    staged.create({ intermediates: true, overwrite: true });
+    staged.write(built.json);
 
-    try {
-      await Linking.openURL(`tapmoodexport://save?name=${encodeURIComponent(fileName)}`);
-    } catch (e) {
-      // 自定义 scheme 拉起失败时兜底：intent: URI 显式组件直连，不经隐式过滤器匹配
-      const first = e instanceof Error ? e.message : String(e);
-      try {
-        await Linking.openURL(
-          `intent:#Intent;component=com.tapmood.app/com.tapmood.app.ExportToDownloadsActivity;S.name=${fileName};end`
-        );
-      } catch (e2) {
-        const second = e2 instanceof Error ? e2.message : String(e2);
-        return {
-          success: false,
-          count: built.count,
-          error: `拉起失败[深链: ${first.slice(0, 70)}][直连: ${second.slice(0, 70)}]`,
-        };
-      }
-    }
+    await ReactNativeBlobUtil.MediaCollection.copyToMediaStore(
+      {
+        name: fileName,
+        parentFolder: '',
+        mimeType: 'application/json',
+      } as never,
+      'Download',
+      staged.uri
+    );
     return { success: true, count: built.count, fileName };
   } catch (e) {
-    const detail = e instanceof Error && e.message ? `：${e.message.slice(0, 60)}` : '';
-    return { success: false, count: 0, error: `暂存备份失败${detail}` };
+    const detail = e instanceof Error && e.message ? e.message.slice(0, 100) : String(e).slice(0, 100);
+    return { success: false, count: 0, error: `写入下载目录失败：${detail}` };
   }
 }
 

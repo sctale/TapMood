@@ -226,6 +226,11 @@ $env:GH_TOKEN = "ghp_xxx"
 
 ## 常见问题
 
+### One UI 上 Linking.openURL 拉不起本应用自定义 scheme Activity（0.4.x 深链方案阵亡记录）
+- 现象：JS `Linking.openURL('tapmoodexport://...')` 拉起自家 `exported=false` Activity，filter 已含 VIEW+DEFAULT+BROWSABLE+scheme 仍 ActivityNotFound（多版本修复无效，One UI/Android 16 实测）
+- 教训：不要再用"自定义 scheme 拉起透明 Activity"做 JS→原生通道；公共目录写入等原生能力走原生模块方法直调（现方案：`react-native-blob-util` `MediaCollection.copyToMediaStore(fd, 'Download', path)`）
+- 通用规则：小组件式"原生 → JS"（PendingIntent 显式 Intent）可用；"JS → 原生"必须走模块方法，勿走隐式 Intent
+
 ### `new File(dir, 'sub/x.json')` 静默错位（v0.4.0 保存到手机失败根因）
 - 现象：JS 写入"成功"，但原生按 `filesDir/sub/x.json` 找不到文件
 - 原因：expo-file-system 的 `File` 第二参不是相对路径字符串，含 `/` 时不保证解析为目录分隔

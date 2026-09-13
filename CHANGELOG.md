@@ -1,5 +1,10 @@
 # 更新日志
 
+## [0.4.4] - 2026-09-13
+
+### 变更
+- **"保存到手机「下载」目录"更换实现机制**：深链拉起透明 Activity 的方案（0.4.0~0.4.3）在 One UI 实测始终无法拉起（即便 filter 完备），整体废弃并清除（删 `withExportToDownloads` 插件/manifest 注入/Java 文件）。改用生态成熟方案 `react-native-blob-util` 的 `MediaCollection.copyToMediaStore(fd, 'Download', path)`——原生模块方法**直接调用**（完全绕开 Intent 解析），API 29+ 写 MediaStore.Downloads 零权限、≤28 库内部走 Legacy 目录。成功即 Toast"已保存到「下载」目录"（现在能同步拿到真实成败与原生错误消息，不再"移交即成功"）
+
 ## [0.4.3] - 2026-09-13
 
 ### 优化
