@@ -1,5 +1,11 @@
 # 更新日志
 
+## [0.4.2] - 2026-09-13
+
+### 修复
+- **"保存到手机"报"无法拉起系统写入入口"**：`ExportToDownloadsActivity` 的 intent-filter 只声明了 `DEFAULT` category，而 RN `Linking.openURL` 在 Android 上发起的 ACTION_VIEW 隐式 intent 携带 `CATEGORY_BROWSABLE`——没有 BROWSABLE 的过滤器不参与匹配，抛 ActivityNotFound。补齐 `BROWSABLE` category
+- **config plugin 注入改为声明式覆盖**：Manifest 注入此前"已存在即跳过"，增量 prebuild 保留旧 `AndroidManifest.xml` 时新改动永远进不去；现每次覆盖为期望形态
+
 ## [0.4.1] - 2026-09-13
 
 ### 修复
