@@ -226,6 +226,11 @@ $env:GH_TOKEN = "ghp_xxx"
 
 ## 常见问题
 
+### `new File(dir, 'sub/x.json')` 静默错位（v0.4.0 保存到手机失败根因）
+- 现象：JS 写入"成功"，但原生按 `filesDir/sub/x.json` 找不到文件
+- 原因：expo-file-system 的 `File` 第二参不是相对路径字符串，含 `/` 时不保证解析为目录分隔
+- 解决：多级路径必须多参数拼接——`new File(Paths.document, 'export_tmp', fileName)`（文档写法）
+
 ### EBUSY: resource busy or locked
 - 原因：Gradle daemon 或其他进程占用 `android/` 目录
 - 解决：关闭占用进程，或直接运行 `npx expo prebuild --platform android`（不加 `--clean`）

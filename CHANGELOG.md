@@ -1,5 +1,14 @@
 # 更新日志
 
+## [0.4.1] - 2026-09-13
+
+### 修复
+- **"保存到手机「下载」目录"失败**：v0.4.0 暂存备份用 `new File(Paths.document, 'export_tmp/xxx.json')` 把带 `/` 的多级路径整串传给单参数——非 expo-file-system 文档用法，斜杠未被解析为目录分隔，原生侧按 `filesDir/export_tmp/<name>` 取不到暂存文件。改为文档推荐的多参数拼接 `new File(Paths.document, 'export_tmp', fileName)`
+
+### 优化
+- **原生写入两段式**：MediaStore 改 `IS_PENDING=1 → 写入 → 置 0 发布`（部分 OEM Provider 要求），失败时删除半截条目防幽灵文件
+- **失败可定位**：Toast 文案携带具体原因（拒绝创建条目/输出流失败/异常类名），Activity 全链路 `TapMoodExport` tag logcat 日志；JS 侧"暂存失败/无法拉起入口"分层报错
+
 ## [0.4.0] - 2026-09-13
 
 ### 新功能
