@@ -9,7 +9,7 @@
 - **日历视图**：周/月/年三种视图，进度统计条 + 情绪热力图一目了然（色盲友好：颜色+形状双通道区分）
 - **心情分析**：饼图（占比）/柱图（趋势）切换显示，周期对比发现情绪规律
 - **每日提醒**：自定义时间推送通知，养成记录习惯
-- **数据导入/导出**：JSON 完整备份（心情记录 + 通知设置），支持"合并/替换"策略
+- **数据导入/导出**：JSON 完整备份（心情记录 + 通知设置），支持"合并/替换"策略；Android 可直接保存到系统「下载」目录，无需借助其他应用
 - **隐私优先**：所有数据本地存储，不上传任何服务器
 
 ## 技术栈
@@ -78,13 +78,14 @@ src/
     └── moodTips.ts         # 心情建议文案
 
 plugins/
-├── withAndroidWidget.js    # Expo Config Plugin：自动生成 Android 原生桌面小组件
-├── withVersionSync.js      # Expo Config Plugin：自动从 app.json.expo.version 派生 Android versionCode
-└── withReleaseSigning.js   # Expo Config Plugin：为 release 构建注入私有 keystore 签名
+├── withAndroidWidget.js      # Expo Config Plugin：自动生成 Android 原生桌面小组件
+├── withExportToDownloads.js  # Expo Config Plugin：注入"保存到下载目录"原生入口（ExportToDownloadsActivity）
+├── withVersionSync.js        # Expo Config Plugin：自动从 app.json.expo.version 派生 Android versionCode
+└── withReleaseSigning.js     # Expo Config Plugin：为 release 构建注入私有 keystore 签名
 ```
 
 ## 版本
 
-当前版本：0.3.50
+当前版本：0.4.0
 
 > ⚠️ v0.3.49 起改用私有 release keystore 签名（此前为 debug 签名）。老用户**需先卸载旧版本再安装**，否则提示"安装包冲突"。升级前请在设置页导出备份。

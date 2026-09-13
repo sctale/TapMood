@@ -1,5 +1,13 @@
 # 更新日志
 
+## [0.4.0] - 2026-09-13
+
+### 新功能
+- **数据直接导出到手机存储**：设置页新增「保存到手机「下载」目录」按钮（Android 专属）——备份 JSON 无需再经分享面板转存到其他应用，一键写入系统公共「下载」目录，文件管理/电脑连线直接可见
+  - 实现：Expo SDK 56 官方包无"另存为/公共目录写入"API（旧 `getDirectoryPermissionsAsync` 已移除），沿用小组件的 config plugin 原生注入模式新增 `plugins/withExportToDownloads.js`——JS 写备份到应用内部 `export_tmp/`，经私有深链 `tapmoodexport://`（与 `tapmood://` 主页深链互不干扰，Activity `exported=false` 仅本应用可拉起）交给透明 `ExportToDownloadsActivity`；API 29+ 走 MediaStore.Downloads 零权限，API ≤28 声明 `WRITE_EXTERNAL_STORAGE(maxSdk 28)` 直写兜底；成败均以系统 Toast 反馈
+  - 文件名白名单校验（仅字母数字与 `. _ -`、强制 `.json` 后缀）防路径穿越；同名文件 MediaStore 自动加后缀不覆盖
+- **导出链路收敛**：分享导出与保存到手机共用 `buildBackupJson` 单一备份构建器（版本/时间戳/记录/通知设置兜底逻辑不再重复两份）
+
 ## [0.3.50] - 2026-09-13
 
 ### 修复

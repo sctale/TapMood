@@ -6,7 +6,7 @@ import Svg, { Path, Circle, Polyline, Ellipse, Rect } from 'react-native-svg';
 import { COLORS, SPACING, MOOD_EVENTS, FONT_SIZE, RADIUS } from '../constants';
 import type { NotificationSettings } from '../types';
 import { getNotificationSettings, saveNotificationSettings, getTotalRecordCount, getDatabaseSize } from '../database/moodDB';
-import { exportMoodData } from '../utils/exportData';
+import { exportMoodData, exportMoodDataToDownloads } from '../utils/exportData';
 import { pickAndImportData, type ImportStrategy } from '../utils/importData';
 import { applyNotificationSettings } from '../utils/notification';
 import TimeWheelPicker from '../components/TimeWheelPicker';
@@ -160,6 +160,7 @@ export default function SettingsScreen() {
   const [dbSizeBytes, setDbSizeBytes] = useState(0);
   const [exporting, setExporting] = useState(false);
   const [importing, setImporting] = useState(false);
+  const [savingPhone, setSavingPhone] = useState(false);
   const [toast, setToast] = useState<{ visible: boolean; message: string; type: 'success' | 'error' | 'info'; id: number }>({
     visible: false,
     message: '',
@@ -253,6 +254,23 @@ export default function SettingsScreen() {
     setExporting(false);
     if (!result.success) {
       Alert.alert('导出失败', result.error ?? '请稍后重试');
+    }
+  };
+
+  // 直接保存到手机「下载」目录（仅 Android，原生落盘结果由系统 Toast 呈现）
+  const handleExportToPhone = async () => {
+    if (savingPhone) return;
+    if (totalRecords === 0) {
+      Alert.alert('提示', '暂无数据可导出');
+      return;
+    }
+    setSavingPhone(true);
+    const result = await exportMoodDataToDownloads();
+    setSavingPhone(false);
+    if (result.success) {
+      showToast(`已保存到「下载」目录 · ${result.count} 条记录`);
+    } else {
+      Alert.alert('保存失败', result.error ?? '请稍后重试');
     }
   };
 
@@ -419,8 +437,22 @@ export default function SettingsScreen() {
             </TouchableOpacity>
           </View>
 
+          {/* 保存到手机「下载」目录（Android 专属：公共目录写入由原生 ExportToDownloadsActivity 完成） */}
+          {RNPlatform.OS === 'android' && (
+            <TouchableOpacity
+              style={[styles.btnOutlined, styles.btnPhoneExport]}
+              onPress={handleExportToPhone}
+              disabled={exporting || importing || savingPhone || totalRecords === 0}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.btnOutlinedText}>
+                {savingPhone ? '保存中...' : '保存到手机「下载」目录'}
+              </Text>
+            </TouchableOpacity>
+          )}
+
           <Text style={styles.exportHint}>
-            JSON 格式包含心情记录与通知设置，可跨设备恢复
+            JSON 格式包含心情记录与通知设置，可跨设备恢复；"保存到手机"无需借助其他应用，文件直接写入系统下载目录
           </Text>
         </View>
 
@@ -641,6 +673,11 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.surface, // 必须实色，否则 RN Android 圆角失效
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  // 保存到手机：btnOutlined 在纵向容器中需脱离 flex:1 并补间距
+  btnPhoneExport: {
+    flex: 0,
+    marginTop: 12,
   },
   btnOutlinedText: {
     fontSize: FONT_SIZE.md,
