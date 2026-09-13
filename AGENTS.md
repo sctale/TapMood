@@ -61,6 +61,16 @@ Get-Item d:\V-Coding\TapMood\android\app\build\outputs\apk\release\app-release.a
 - `versionCode` 是 `major*10000 + minor*100 + patch` 派生值（例：0.3.12 → 312）
 - 如果不对：**必须修复后重新构建**，不能直接发布
 
+### 4. 复制 APK 到项目根目录（交付约定）
+
+```powershell
+Copy-Item d:\V-Coding\TapMood\android\app\build\outputs\apk\release\app-release.apk `
+  d:\V-Coding\TapMood\TapMood-v<版本号>.apk
+```
+
+- 构建产物路径太深不便取用，**每次发版必须**把 release APK 复制为项目根目录的 `TapMood-v<版本号>.apk`
+- `.gitignore` 已含 `*.apk`，根目录副本不会入库；上传 GitHub Release 时仍用 `android\...\app-release.apk#TapMood-v<版本号>.apk` 源路径或根目录副本均可
+
 > 版本号由 [`plugins/withVersionSync.js`](plugins/withVersionSync.js) 自动从 `app.json.expo.version` 派生。详见下文"自动版本号同步"。
 
 ---
