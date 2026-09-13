@@ -157,26 +157,36 @@ function withExportToDownloads(config) {
     const application = manifest.application[0];
 
     const activities = application.activity || [];
-    const exists = activities.some((a) => a.$['android:name'] === '.ExportToDownloadsActivity');
-    if (!exists) {
-      activities.push({
-        $: {
-          'android:name': '.ExportToDownloadsActivity',
-          'android:exported': 'false',
-          'android:noHistory': 'true',
-          'android:excludeFromRecents': 'true',
-          'android:theme': '@android:style/Theme.Translucent.NoTitleBar',
+    // 声明式覆盖：无论是否已存在都写入当前期望形态，
+    // 避免增量 prebuild 保留旧版 AndroidManifest 时改不动已注入条目
+    // （历史教训：0.4.0 只声明 DEFAULT，而 RN Linking.openURL 发起的
+    //  ACTION_VIEW 会携带 CATEGORY_BROWSABLE，缺 BROWSABLE 导致 ActivityNotFound）
+    const desired = {
+      $: {
+        'android:name': '.ExportToDownloadsActivity',
+        'android:exported': 'false',
+        'android:noHistory': 'true',
+        'android:excludeFromRecents': 'true',
+        'android:theme': '@android:style/Theme.Translucent.NoTitleBar',
+      },
+      'intent-filter': [
+        {
+          action: [{ $: { 'android:name': 'android.intent.action.VIEW' } }],
+          category: [
+            { $: { 'android:name': 'android.intent.category.DEFAULT' } },
+            { $: { 'android:name': 'android.intent.category.BROWSABLE' } },
+          ],
+          data: [{ $: { 'android:scheme': 'tapmoodexport' } }],
         },
-        'intent-filter': [
-          {
-            action: [{ $: { 'android:name': 'android.intent.action.VIEW' } }],
-            category: [{ $: { 'android:name': 'android.intent.category.DEFAULT' } }],
-            data: [{ $: { 'android:scheme': 'tapmoodexport' } }],
-          },
-        ],
-      });
-      application.activity = activities;
+      ],
+    };
+    const idx = activities.findIndex((a) => a.$['android:name'] === '.ExportToDownloadsActivity');
+    if (idx === -1) {
+      activities.push(desired);
+    } else {
+      activities[idx] = desired;
     }
+    application.activity = activities;
 
     const perms = manifest['uses-permission'] || [];
     const hasPerm = perms.some((p) => p.$['android:name'] === 'android.permission.WRITE_EXTERNAL_STORAGE');
