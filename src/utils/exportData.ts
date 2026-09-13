@@ -93,14 +93,20 @@ export async function exportMoodDataToDownloads(): Promise<{
     }
 
     const fileName = backupFileName();
-    const file = new File(Paths.document, `export_tmp/${fileName}`);
+    // 文档推荐多参拼接路径段（单参内含 '/' 非文档行为，曾致暂存路径解析失败）
+    const file = new File(Paths.document, 'export_tmp', fileName);
     file.create({ intermediates: true, overwrite: true });
     file.write(built.json);
 
-    await Linking.openURL(`tapmoodexport://save?name=${encodeURIComponent(fileName)}`);
+    try {
+      await Linking.openURL(`tapmoodexport://save?name=${encodeURIComponent(fileName)}`);
+    } catch {
+      return { success: false, count: built.count, error: '无法拉起系统写入入口' };
+    }
     return { success: true, count: built.count, fileName };
   } catch (e) {
-    return { success: false, count: 0, error: '保存失败，请重试' };
+    const detail = e instanceof Error && e.message ? `：${e.message.slice(0, 60)}` : '';
+    return { success: false, count: 0, error: `暂存备份失败${detail}` };
   }
 }
 

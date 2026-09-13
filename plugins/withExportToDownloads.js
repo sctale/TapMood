@@ -29,6 +29,7 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
 import android.provider.MediaStore;
+import android.util.Log;
 import android.widget.Toast;
 
 import java.io.File;
@@ -43,6 +44,9 @@ import java.io.OutputStream;
  */
 public class ExportToDownloadsActivity extends Activity {
 
+    private static final String TAG = "TapMoodExport";
+    private String lastError = "未知错误";
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -50,6 +54,7 @@ public class ExportToDownloadsActivity extends Activity {
         Intent intent = getIntent();
         Uri data = intent != null ? intent.getData() : null;
         if (data != null) name = data.getQueryParameter("name");
+        Log.d(TAG, "request name=" + name);
 
         boolean saved = false;
         String reason = "";
@@ -58,7 +63,7 @@ public class ExportToDownloadsActivity extends Activity {
             File src = new File(getFilesDir(), "export_tmp" + File.separator + name);
             if (src.exists() && src.length() > 0) {
                 saved = Build.VERSION.SDK_INT >= 29 ? saveViaMediaStore(src, name) : saveViaPublicDir(src, name);
-                if (!saved) reason = "写入失败";
+                if (!saved) reason = lastError;
             } else {
                 reason = "备份文件不存在";
             }
@@ -67,29 +72,47 @@ public class ExportToDownloadsActivity extends Activity {
         }
 
         if (saved) {
+            Log.d(TAG, "saved ok: " + name);
             Toast.makeText(this, "已保存到「下载」目录：" + name, Toast.LENGTH_LONG).show();
         } else {
+            Log.e(TAG, "save failed: " + reason);
             Toast.makeText(this, "保存失败（" + reason + "），请改用分享导出", Toast.LENGTH_LONG).show();
         }
         finish();
     }
 
-    // API 29+：MediaStore 插入 Downloads，无需存储权限；同名自动加后缀，不做覆盖
+    // API 29+：MediaStore 两段式写入（IS_PENDING→发布，部分 OEM Provider 要求该流程），
+    // 同名自动加后缀不覆盖；失败时清理半截条目
     private boolean saveViaMediaStore(File src, String name) {
+        Uri uri = null;
         try {
             ContentValues values = new ContentValues();
             values.put(MediaStore.Downloads.DISPLAY_NAME, name);
             values.put(MediaStore.Downloads.MIME_TYPE, "application/json");
             values.put(MediaStore.Downloads.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS);
-            Uri uri = getContentResolver().insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, values);
-            if (uri == null) return false;
+            values.put(MediaStore.Downloads.IS_PENDING, 1);
+            uri = getContentResolver().insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, values);
+            if (uri == null) {
+                lastError = "MediaStore 拒绝创建条目";
+                return false;
+            }
             try (InputStream in = new FileInputStream(src);
                  OutputStream out = getContentResolver().openOutputStream(uri)) {
-                if (out == null) return false;
+                if (out == null) {
+                    lastError = "无法打开输出流";
+                    return false;
+                }
                 copy(in, out);
             }
+            values.clear();
+            values.put(MediaStore.Downloads.IS_PENDING, 0);
+            getContentResolver().update(uri, values, null, null);
             return true;
         } catch (Exception e) {
+            lastError = "MediaStore:" + e.getClass().getSimpleName();
+            if (uri != null) {
+                try { getContentResolver().delete(uri, null, null); } catch (Exception ignored) {}
+            }
             return false;
         }
     }
@@ -98,15 +121,22 @@ public class ExportToDownloadsActivity extends Activity {
     private boolean saveViaPublicDir(File src, String name) {
         try {
             File dir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS);
-            if (!dir.exists() && !dir.mkdirs()) return false;
+            if (!dir.exists() && !dir.mkdirs()) {
+                lastError = "无法创建下载目录";
+                return false;
+            }
             File dst = new File(dir, name);
-            if (dst.exists() && !dst.delete()) return false;
+            if (dst.exists() && !dst.delete()) {
+                lastError = "旧文件删除失败";
+                return false;
+            }
             try (InputStream in = new FileInputStream(src);
                  OutputStream out = new FileOutputStream(dst)) {
                 copy(in, out);
             }
             return true;
         } catch (Exception e) {
+            lastError = "Legacy:" + e.getClass().getSimpleName();
             return false;
         }
     }
