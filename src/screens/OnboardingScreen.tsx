@@ -54,7 +54,7 @@ export default function OnboardingScreen({ onDone }: OnboardingScreenProps) {
         contentContainerStyle={styles.scrollContent}
       >
         {PAGES.map((page, i) => (
-          <View key={i} style={styles.page}>
+          <View key={i} style={[styles.page, { width }]}>
             <Text style={styles.emoji}>{page.emoji}</Text>
             <Text style={styles.title}>{page.title}</Text>
             <Text style={styles.subtitle}>{page.subtitle}</Text>
