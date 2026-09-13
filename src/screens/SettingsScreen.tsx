@@ -160,10 +160,11 @@ export default function SettingsScreen() {
   const [dbSizeBytes, setDbSizeBytes] = useState(0);
   const [exporting, setExporting] = useState(false);
   const [importing, setImporting] = useState(false);
-  const [toast, setToast] = useState<{ visible: boolean; message: string; type: 'success' | 'error' | 'info' }>({
+  const [toast, setToast] = useState<{ visible: boolean; message: string; type: 'success' | 'error' | 'info'; id: number }>({
     visible: false,
     message: '',
     type: 'success',
+    id: 0,
   });
   const [confirmReplaceVisible, setConfirmReplaceVisible] = useState(false);
   const [confirmInput, setConfirmInput] = useState('');
@@ -198,6 +199,7 @@ export default function SettingsScreen() {
   };
 
   // 切换通知开关
+  // 先持久化再更新 UI：保存失败时 Switch 保持原状态，避免 UI 与 DB 不一致
   const toggleNotification = async (value: boolean) => {
     try {
       if (value) {
@@ -207,8 +209,8 @@ export default function SettingsScreen() {
           return;
         }
       }
-      setNotificationEnabled(value);
       await saveNotificationSettings({ enabled: value, hour: notificationHour, minute: notificationMinute });
+      setNotificationEnabled(value);
       await applyNotificationSettings({ enabled: value, hour: notificationHour, minute: notificationMinute });
     } catch {
       Alert.alert('操作失败', '请稍后重试');
@@ -254,9 +256,9 @@ export default function SettingsScreen() {
     }
   };
 
-  // 显示 Toast
+  // 显示 Toast（id 自增保证同文案连续触发时 Toast 仍能重置定时器）
   const showToast = (message: string, type: 'success' | 'error' | 'info' = 'success') => {
-    setToast({ visible: true, message, type });
+    setToast((prev) => ({ visible: true, message, type, id: prev.id + 1 }));
   };
 
   // 隐藏 Toast（useCallback 稳定引用，避免 Toast 的 useEffect 因 onHide 变化重置定时器）
@@ -531,6 +533,7 @@ export default function SettingsScreen() {
         visible={toast.visible}
         message={toast.message}
         type={toast.type}
+        id={toast.id}
         onHide={hideToast}
       />
     </View>

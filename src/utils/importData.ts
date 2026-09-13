@@ -74,8 +74,30 @@ function parseJSONBackup(text: string): { records: MoodRecord[]; skipped: number
       skipped++;
     }
   }
-  const notificationSettings = obj.notificationSettings as NotificationSettings | undefined;
+  const notificationSettings = parseNotificationSettings(obj.notificationSettings);
   return { records, skipped, notificationSettings };
+}
+
+// 校验并解析备份中的通知设置
+// 非法值（hour/minute 超范围或非整数、enabled 非布尔）返回 undefined，
+// 避免脏数据持久化后调度产生 Invalid Date 导致通知链断裂
+function parseNotificationSettings(input: unknown): NotificationSettings | undefined {
+  if (!input || typeof input !== 'object') return undefined;
+  const s = input as Record<string, unknown>;
+  if (typeof s.enabled !== 'boolean') return undefined;
+  if (
+    typeof s.hour !== 'number' || !Number.isInteger(s.hour) ||
+    s.hour < 0 || s.hour > 23
+  ) {
+    return undefined;
+  }
+  if (
+    typeof s.minute !== 'number' || !Number.isInteger(s.minute) ||
+    s.minute < 0 || s.minute > 59
+  ) {
+    return undefined;
+  }
+  return { enabled: s.enabled, hour: s.hour, minute: s.minute };
 }
 
 // 重新调度通知（导入新通知设置后）

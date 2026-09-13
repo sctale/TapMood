@@ -1,8 +1,8 @@
 import React, { useState, useCallback, useEffect, useMemo, useRef } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, DeviceEventEmitter } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, DeviceEventEmitter, AppState } from 'react-native';
 import type { AnalysisPeriod } from '../types';
 import { COLORS, SPACING, FONT_SIZE, MOOD_EVENTS, RADIUS } from '../constants';
-import { getWeekRange, getMonthRange, getYearRange } from '../utils/dateUtils';
+import { getWeekRange, getMonthRange, getYearRange, formatDate } from '../utils/dateUtils';
 import { getStreak, getLongestStreak, getTotalRecordCount } from '../database/moodDB';
 import { getMoodTip } from '../utils/moodTips';
 import MoodPieChart from '../components/MoodPieChart';
@@ -23,7 +23,19 @@ export default function AnalysisScreen() {
   const [streak, setStreak] = useState(0);
   const [longestStreak, setLongestStreak] = useState(0);
   const [totalDays, setTotalDays] = useState(0);
+  // 当前"今天"日期，作为日期范围的依赖，避免进程常驻跨天后范围固化在旧周期
+  const [today, setToday] = useState(() => new Date());
   const scrollRef = useRef<ScrollView>(null);
+
+  // 回前台时若已跨天，刷新 today 触发范围重算
+  useEffect(() => {
+    const subscription = AppState.addEventListener('change', (next) => {
+      if (next === 'active') {
+        setToday((prev) => (formatDate(prev) === formatDate(new Date()) ? prev : new Date()));
+      }
+    });
+    return () => subscription.remove();
+  }, []);
 
   // 切换到本 tab 时滚动到顶部
   useEffect(() => {
@@ -35,14 +47,14 @@ export default function AnalysisScreen() {
     return () => sub.remove();
   }, []);
 
-  // useMemo 缓存日期范围，避免每次渲染重复计算
+  // useMemo 缓存日期范围，依赖 period 与 today（跨天时重算）
   const { start, end } = useMemo(() => {
     switch (period) {
-      case 'week': return getWeekRange();
-      case 'month': return getMonthRange();
-      case 'year': return getYearRange();
+      case 'week': return getWeekRange(today);
+      case 'month': return getMonthRange(today);
+      case 'year': return getYearRange(today);
     }
-  }, [period]);
+  }, [period, today]);
   const { stats, loading, error } = useMoodStats(start, end);
   // 趋势图需要范围内的记录数组（loading/error 需合并判断，避免 trend 分支渲染空白）
   const { records: rangeRecords, loading: rangeLoading, error: rangeError } = useMoodRange(start, end);

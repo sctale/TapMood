@@ -1,5 +1,5 @@
 import * as SQLite from 'expo-sqlite';
-import { File, Paths } from 'expo-file-system';
+import { File } from 'expo-file-system';
 import type { MoodRecord, MoodLevel, MoodStats, NotificationSettings } from '../types';
 import { getToday } from '../utils/dateUtils';
 
@@ -260,9 +260,12 @@ export async function saveNotificationSettings(settings: NotificationSettings): 
 }
 
 // 获取数据库文件大小（字节）
+// 注意：openDatabaseAsync 默认存放在 SQLite.defaultDatabaseDirectory
+// （Android=filesDir/SQLite，iOS=Documents/SQLite），而非文档目录根，
+// 用 Paths.document 拼路径会因文件不存在恒返回 0
 export async function getDatabaseSize(): Promise<number> {
   try {
-    const dbFile = new File(Paths.document, DB_NAME);
+    const dbFile = new File(SQLite.defaultDatabaseDirectory as string, DB_NAME);
     if (dbFile.exists) {
       return dbFile.size;
     }

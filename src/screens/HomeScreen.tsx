@@ -31,8 +31,12 @@ export default function HomeScreen() {
   const [streak, setStreak] = useState(0);
   const [modalDate, setModalDate] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
-  const [toast, setToast] = useState({ visible: false, message: '', type: 'success' as ToastType });
+  const [toast, setToast] = useState({ visible: false, message: '', type: 'success' as ToastType, id: 0 });
   const [isEmpty, setIsEmpty] = useState(false); // 首次使用引导（总记录数为 0）
+  // 当前"今天"日期字符串，用于检测跨天（AppState 回前台时比对）
+  const [todayStr, setTodayStr] = useState(formatDate(new Date()));
+  // 用户是否手动翻页离开"今天"：true 时跨天不自动跳回，避免打断浏览
+  const navigatedRef = useRef(false);
   const scrollRef = useRef<ScrollView>(null);
   // 进度条填充动画（width 动画不支持 nativeDriver）
   const progressAnim = useRef(new Animated.Value(0)).current;
@@ -76,20 +80,39 @@ export default function HomeScreen() {
 
   // 兜底：APP 从后台回到前台时刷新数据
   // 覆盖小组件后台记录（iOS emit 事件丢失）、外部修改 DB 等场景
+  // 同时处理跨天：日期变化且用户未手动翻页时，viewDate 前进到新今天，
+  // 避免"本周/本月/本年"范围固化在旧周期
   useEffect(() => {
     const subscription = AppState.addEventListener('change', (next) => {
       if (next === 'active') {
+        const t = formatDate(new Date());
+        if (t !== todayStr) {
+          setTodayStr(t);
+          if (!navigatedRef.current) {
+            setViewDate(new Date());
+          }
+        }
         refreshToday();
         refreshRecords();
         getStreak().then(setStreak).catch(() => {});
       }
     });
     return () => subscription.remove();
+  }, [refreshToday, refreshRecords, todayStr]);
+
+  // 导入数据后刷新首页（App 用 display:none 常驻挂载，切 tab 不触发 AppState）
+  useEffect(() => {
+    const subscription = DeviceEventEmitter.addListener(MOOD_EVENTS.DATA_IMPORTED, () => {
+      refreshToday();
+      refreshRecords();
+      getStreak().then(setStreak).catch(() => {});
+    });
+    return () => subscription.remove();
   }, [refreshToday, refreshRecords]);
 
-  // 显示Toast提示
+  // 显示Toast提示（id 自增保证同文案连续触发时 Toast 仍能重置定时器）
   const showToast = useCallback((message: string, type: ToastType = 'success') => {
-    setToast({ visible: true, message, type });
+    setToast((prev) => ({ visible: true, message, type, id: prev.id + 1 }));
   }, []);
 
   const hideToast = useCallback(() => {
@@ -161,11 +184,20 @@ export default function HomeScreen() {
     refreshToday();
     const s = await getStreak();
     setStreak(s);
+    // 重新调度通知：补记"今天"后应跳过今天已排定的提醒
+    // （applyNotificationSettings 内部查询今日心情，记录过则不排今天）
+    try {
+      const settings = await getNotificationSettings();
+      await applyNotificationSettings(settings);
+    } catch {
+      // 重新调度失败静默
+    }
     DeviceEventEmitter.emit(MOOD_EVENTS.RECORDED);
     showToast('已记录心情 ✨');
   }, [refreshRecords, refreshToday, showToast]);
 
   const navigateDate = useCallback((direction: -1 | 1) => {
+    navigatedRef.current = true;
     setViewDate((prev) => {
       const next = new Date(prev);
       switch (calendarView) {
@@ -177,7 +209,10 @@ export default function HomeScreen() {
     });
   }, [calendarView]);
 
-  const goToday = useCallback(() => { setViewDate(new Date()); }, []);
+  const goToday = useCallback(() => {
+    navigatedRef.current = false;
+    setViewDate(new Date());
+  }, []);
 
   const handleViewChange = useCallback((view: CalendarView) => {
     // tab 指示器平滑过渡（iOS segmented 风格）
@@ -375,6 +410,7 @@ export default function HomeScreen() {
         message={toast.message}
         type={toast.type}
         visible={toast.visible}
+        id={toast.id}
         onHide={hideToast}
       />
     </View>

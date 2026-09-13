@@ -191,9 +191,11 @@ export async function updateMoodWidget() {
       bgAlpha: currentBgAlphaLevel,
     };
     // 明天 00:01 自动清空今日心情显示
+    // streak 同步置 0：跨天后用户尚未记录，按 getStreak 语义应为 0，
+    // 沿用今日值会与应用内定义矛盾
     const nextDayProps: MoodWidgetProps = {
       todayMood: '',
-      streak,
+      streak: 0,
       bgAlpha: currentBgAlphaLevel,
     };
 

@@ -69,13 +69,24 @@ export async function scheduleNextReminders(
 ): Promise<void> {
   try {
     await ensureNotificationChannel();
+
+    if (!settings.enabled) {
+      await Notifications.cancelAllScheduledNotificationsAsync();
+      return;
+    }
+
+    // 先计算触发日期再清空旧调度：
+    // 若日期非法（Invalid Date 等）在计算阶段就抛错，旧调度不受影响，
+    // 避免"先 cancel 后失败"导致通知链断裂
+    const dates = getNextTriggerDates(settings, hasTodayMood);
+    // 防御：过滤掉 Invalid Date（理论上校验后不会出现）
+    const validDates = dates.filter((d) => !Number.isNaN(d.getTime()));
+    if (validDates.length === 0) return;
+
     // 清空旧的所有调度（确保只有最新一批待触发通知）
     await Notifications.cancelAllScheduledNotificationsAsync();
 
-    if (!settings.enabled) return;
-
-    const dates = getNextTriggerDates(settings, hasTodayMood);
-    for (const date of dates) {
+    for (const date of validDates) {
       await Notifications.scheduleNotificationAsync({
         identifier: `mood_reminder_${date.toISOString()}`,
         content: NOTIFICATION_CONTENT,

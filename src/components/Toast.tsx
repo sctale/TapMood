@@ -10,9 +10,11 @@ interface ToastProps {
   visible: boolean;
   onHide: () => void;
   duration?: number;
+  // 自增令牌：同文案连续触发时 message/visible 不变，靠 id 变化让 memo 重渲染、定时器重置
+  id?: number;
 }
 
-export default React.memo(function Toast({ message, type = 'success', visible, onHide, duration = 1800 }: ToastProps) {
+export default React.memo(function Toast({ message, type = 'success', visible, onHide, duration = 1800, id = 0 }: ToastProps) {
   const opacity = useRef(new Animated.Value(0)).current;
   const translateY = useRef(new Animated.Value(-20)).current;
   // 用 ref 保存最新 onHide，避免其引用变化重置定时器（父组件内联函数会导致 Toast 永不消失）
@@ -56,7 +58,7 @@ export default React.memo(function Toast({ message, type = 'success', visible, o
 
       return () => clearTimeout(timer);
     }
-  }, [visible, message, duration, opacity, translateY]);
+  }, [visible, message, duration, id, opacity, translateY]);
 
   if (!visible) return null;
 

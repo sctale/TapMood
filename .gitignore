@@ -49,6 +49,9 @@ test.bundle
 /ios
 /android
 
+# release signing (keystore + password, never commit)
+/keystores/
+
 # build outputs
 *.apk
 *.aab
