@@ -100,8 +100,21 @@ export async function exportMoodDataToDownloads(): Promise<{
 
     try {
       await Linking.openURL(`tapmoodexport://save?name=${encodeURIComponent(fileName)}`);
-    } catch {
-      return { success: false, count: built.count, error: '无法拉起系统写入入口' };
+    } catch (e) {
+      // 自定义 scheme 拉起失败时兜底：intent: URI 显式组件直连，不经隐式过滤器匹配
+      const first = e instanceof Error ? e.message : String(e);
+      try {
+        await Linking.openURL(
+          `intent:#Intent;component=com.tapmood.app/com.tapmood.app.ExportToDownloadsActivity;S.name=${fileName};end`
+        );
+      } catch (e2) {
+        const second = e2 instanceof Error ? e2.message : String(e2);
+        return {
+          success: false,
+          count: built.count,
+          error: `拉起失败[深链: ${first.slice(0, 70)}][直连: ${second.slice(0, 70)}]`,
+        };
+      }
     }
     return { success: true, count: built.count, fileName };
   } catch (e) {

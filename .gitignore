@@ -60,3 +60,6 @@ test.bundle
 *.log
 *.tmp
 tapmood-ui-preview/
+
+# release notes（发版临时说明文件，交付物统一留在项目目录）
+release_notes*.md

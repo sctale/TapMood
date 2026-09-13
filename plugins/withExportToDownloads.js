@@ -54,7 +54,8 @@ public class ExportToDownloadsActivity extends Activity {
         Intent intent = getIntent();
         Uri data = intent != null ? intent.getData() : null;
         if (data != null) name = data.getQueryParameter("name");
-        Log.d(TAG, "request name=" + name);
+        if (name == null && intent != null) name = intent.getStringExtra("name");
+        Log.d(TAG, "request name=" + name + " data=" + data + " action=" + (intent != null ? intent.getAction() : null));
 
         boolean saved = false;
         String reason = "";
